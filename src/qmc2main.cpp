@@ -47,14 +47,12 @@
 #include "marquee.h"
 #include "title.h"
 #include "pcb.h"
-#include "docbrowser.h"
 #include "about.h"
 #include "welcome.h"
 #include "imagechecker.h"
 #include "romalyzer.h"
 #include "romstatusexport.h"
 #include "componentsetup.h"
-#include "miniwebbrowser.h"
 #include "mz_compat.h"
 #include "sevenzipfile.h"
 #include "downloaditem.h"
@@ -89,7 +87,6 @@
 #if defined(QMC2_OS_WIN)
 #include "windows_tools.h"
 #endif
-#include "htmleditor/htmleditor.h"
 #include "arcademodesetup.h"
 #include "fileiconprovider.h"
 #include "aspectratiolabel.h"
@@ -122,7 +119,6 @@ Marquee *qmc2Marquee = 0;
 Title *qmc2Title = 0;
 PCB *qmc2PCB = 0;
 About *qmc2About = 0;
-DocBrowser *qmc2DocBrowser = 0;
 Welcome *qmc2Welcome = 0;
 ImageChecker *qmc2ImageChecker = 0;
 ROMAlyzer *qmc2SystemROMAlyzer = 0;
@@ -211,18 +207,14 @@ bool qmc2LoadingEmuInfoDB = false;
 QTreeWidgetItem *qmc2LastEmuInfoItem = 0;
 bool qmc2LoadingSoftwareInfoDB = false;
 QTreeWidgetItem *qmc2LastSoftwareInfoItem = 0;
-MiniWebBrowser *qmc2ProjectMESSLookup = 0;
 QTreeWidgetItem *qmc2LastProjectMESSItem = 0;
 QCache<QString, QByteArray> qmc2ProjectMESSCache;
 QHash<QString, QTreeWidgetItem *> qmc2CategoryItemHash;
 QTreeWidgetItem *qmc2CategoryViewSelectedItem = 0;
 QHash<QString, QTreeWidgetItem *> qmc2VersionItemHash;
 QTreeWidgetItem *qmc2VersionViewSelectedItem = 0;
-MiniWebBrowser *qmc2ProjectMESS = 0;
 QTreeWidgetItem *qmc2LastSoftwareNotesItem = 0;
 QTreeWidgetItem *qmc2LastSystemNotesItem = 0;
-HtmlEditor *qmc2SystemNotesEditor = 0;
-HtmlEditor *qmc2SoftwareNotesEditor = 0;
 #if defined(QMC2_YOUTUBE_ENABLED)
 YouTubeVideoPlayer *qmc2YouTubeWidget = 0;
 QTreeWidgetItem *qmc2LastYouTubeItem = 0;
@@ -2109,11 +2101,6 @@ void MainWindow::on_actionPlay_triggered(bool)
 
 void MainWindow::on_vSplitter_splitterMoved(int pos, int index)
 {
-	if ( qmc2SystemNotesEditor ) {
-		qmc2SystemNotesEditor->move(0, 0);
-		qmc2SystemNotesEditor->resize(qmc2SystemNotesEditor->parentWidget()->size());
-	}
-
 	QList<int> splitterSizes = vSplitter->sizes();
 	switch ( stackedWidgetSpecial->currentIndex() ) {
 		case QMC2_SPECIAL_SOFTWARE_PAGE:
@@ -2157,10 +2144,6 @@ void MainWindow::on_hSplitter_splitterMoved(int pos, int index)
 		if ( labelMachineStatus->isVisible() )
 			labelMachineStatus->setVisible(false);
 
-	if ( qmc2SystemNotesEditor ) {
-		qmc2SystemNotesEditor->move(0, 0);
-		qmc2SystemNotesEditor->resize(qmc2SystemNotesEditor->parentWidget()->size());
-	}
 }
 
 void MainWindow::on_actionToFavorites_triggered(bool)
@@ -2335,41 +2318,6 @@ void MainWindow::on_actionDemoMode_triggered(bool)
 	QTimer::singleShot(0, qmc2DemoModeDialog, SLOT(raise()));
 }
 
-void MainWindow::on_actionNewBrowserWindow_triggered(bool)
-{
-	viewHtml();
-}
-
-void MainWindow::viewHtml(QString filePath)
-{
-	MiniWebBrowser *webBrowser = new MiniWebBrowser(0);
-	webBrowser->setAttribute(Qt::WA_DeleteOnClose);
-	if ( qmc2Config->contains(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry") )
-		webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
-	else {
-		webBrowser->adjustSize();
-		webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
-	}
-	connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
-	if ( !filePath.isEmpty() ) {
-		QFileInfo fi(filePath);
-		if ( fi.isReadable() ) {
-#if defined(QMC2_OS_WIN)
-			webBrowser->webViewBrowser->load("file:///" + fi.canonicalFilePath());
-#else
-			webBrowser->webViewBrowser->load("file://" + fi.canonicalFilePath());
-#endif
-		} else
-			qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("ERROR: can't load HTML file '%1'").arg(filePath));
-	}
-	webBrowser->show();
-}
-
-void MainWindow::on_actionNewPdfViewer_triggered(bool)
-{
-	viewPdf();
-}
-
 void MainWindow::on_actionNewFilteredView_triggered(bool)
 {
 	MachineListViewer *mlv = new MachineListViewer;
@@ -2378,38 +2326,6 @@ void MainWindow::on_actionNewFilteredView_triggered(bool)
 	connect(mlv, SIGNAL(tagChanged(const QString &, bool)), this, SLOT(machineListViewer_tagChanged(const QString &, bool)));
 	connect(this, SIGNAL(selectionChanged(const QString &)), mlv, SLOT(mainSelectionChanged(const QString &)));
 	mlv->show();
-}
-
-void MainWindow::viewPdf(QString filePath)
-{
-	QString htmlPath = qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/DataDirectory").toString() + "/js/pdfjs/web/viewer.html";
-	QFileInfo fi(htmlPath);
-	if ( fi.isReadable() ) {
-		MiniWebBrowser *webBrowser = new MiniWebBrowser(0, true);
-		webBrowser->setAttribute(Qt::WA_DeleteOnClose);
-		if ( qmc2Config->contains(QMC2_FRONTEND_PREFIX + "PdfViewer/Geometry") )
-			webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "PdfViewer/Geometry").toByteArray());
-		else {
-			webBrowser->adjustSize();
-			webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
-		}
-		connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
-		if ( !filePath.isEmpty() ) {
-#if defined(QMC2_OS_WIN)
-			webBrowser->webViewBrowser->load("file:///" + fi.canonicalFilePath() + QString("?file=file:///%1").arg(filePath));
-#else
-			webBrowser->webViewBrowser->load("file://" + fi.canonicalFilePath() + QString("?file=file://%1").arg(filePath));
-#endif
-		} else {
-#if defined(QMC2_OS_WIN)
-			webBrowser->webViewBrowser->load("file:///" + fi.canonicalFilePath() + QString("?file="));
-#else
-			webBrowser->webViewBrowser->load("file://" + fi.canonicalFilePath() + QString("?file="));
-#endif
-		}
-		webBrowser->show();
-	} else
-		qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("ERROR: can't load PDF viewer from '%1'").arg(htmlPath));
 }
 
 void MainWindow::on_actionCheckImagesAndIcons_triggered(bool)
@@ -2830,31 +2746,6 @@ void MainWindow::on_actionFullscreenToggle_triggered(bool)
 		textBrowserFrontendLog->verticalScrollBar()->setValue(textBrowserFrontendLog->verticalScrollBar()->maximum());
 	if ( emuLogScrollBarMaximum )
 		textBrowserEmulatorLog->verticalScrollBar()->setValue(textBrowserEmulatorLog->verticalScrollBar()->maximum());
-}
-
-void MainWindow::on_actionDocumentation_triggered(bool)
-{
-	if ( !qmc2DocBrowser ) {
-		qmc2DocBrowser = new DocBrowser(this);
-		qmc2DocBrowser->browser->spinBoxZoom->setValue(qmc2Config->value(QMC2_FRONTEND_PREFIX + "Layout/DocBrowser/Zoom", 100).toInt());
-		QString searchPath(qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/DataDirectory").toString() + "doc/html/" + qmc2Config->value(QMC2_FRONTEND_PREFIX + "GUI/Language", "us").toString());
-		QFileInfo fi(searchPath + "/index.html");
-		if ( !fi.exists() || !fi.isFile() || fi.isSymLink() ) // fall back to US English if there's no language-specific index file
-			searchPath = qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/DataDirectory").toString() + "doc/html/us";
-#if defined(QMC2_OS_WIN)
-		QDir searchDir(searchPath);
-		QUrl docUrl("file:///" + searchDir.absolutePath() + "/index.html");
-#else
-		QUrl docUrl("file://" + searchPath + "/index.html");
-#endif
-		qmc2DocBrowser->browser->webViewBrowser->load(docUrl);
-	}
-	if ( qmc2DocBrowser->isMinimized() )
-		qmc2DocBrowser->showNormal();
-	else
-		qmc2DocBrowser->show();
-
-	qmc2DocBrowser->raise();
 }
 
 void MainWindow::on_actionAbout_triggered(bool)
@@ -3487,8 +3378,6 @@ void MainWindow::on_tabWidgetSoftwareDetail_currentChanged(int currentIndex)
 	gridLayout->getContentsMargins(&left, &top, &right, &bottom);
 	switch ( componentInfo->appliedFeatureList().at(currentIndex) ) {
 		case QMC2_SWINFO_SNAPSHOT_PAGE:
-			if ( qmc2SoftwareNotesEditor )
-				qmc2SoftwareNotesEditor->hideTearOffMenus();
 			if ( !qmc2SoftwareSnapshot ) {
 				qmc2SoftwareSnapshot = new SoftwareSnapshot(tabSnapshot);
 				QHBoxLayout *layout = new QHBoxLayout;
@@ -3497,132 +3386,7 @@ void MainWindow::on_tabWidgetSoftwareDetail_currentChanged(int currentIndex)
 				tabSnapshot->setLayout(layout);
 			}
 			break;
-		case QMC2_SWINFO_PROJECTMESS_PAGE:
-			if ( qmc2SoftwareNotesEditor )
-				qmc2SoftwareNotesEditor->hideTearOffMenus();
-			if ( qmc2SoftwareList->currentItem != qmc2LastProjectMESSItem ) {
-				if ( !qmc2ProjectMESS ) {
-					QVBoxLayout *layout = new QVBoxLayout;
-					layout->setContentsMargins(left, top, right, bottom);
-					qmc2ProjectMESS = new MiniWebBrowser(tabSoftwareProjectMESS);
-					layout->addWidget(qmc2ProjectMESS);
-					tabSoftwareProjectMESS->setLayout(layout);
-					connect(qmc2ProjectMESS->webViewBrowser, SIGNAL(loadStarted()), this, SLOT(projectMessLoadStarted()));
-				}
-				QString entryName = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME);
-				QString entryTitle = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_TITLE);
-				QString listName = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST);
-				QString projectMessUrl = qmc2Config->value(QMC2_FRONTEND_PREFIX + "ProjectMESS/BaseURL", QMC2_PROJECT_MESS_BASE_URL).toString().arg(entryName).arg(listName);
-				qmc2ProjectMESS->webViewBrowser->setStatusTip(tr("ProjectMESS page for '%1' / '%2'").arg(listName).arg(entryTitle));
-				if ( !qmc2ProjectMESSCache.contains(listName + "_" + entryName) ) {
-					QColor color = qmc2ProjectMESS->webViewBrowser->palette().color(QPalette::WindowText);
-					qmc2ProjectMESS->webViewBrowser->setHtml(
-								QString("<html><head></head><body><center><p><font color=\"#%1%2%3\"<b>").arg(color.red()).arg(color.green()).arg(color.blue()) +
-									tr("Fetching ProjectMESS page for '%1' / '%2', please wait...").arg(listName).arg(entryTitle) + "</font></b></p><p>" +
-									QString("(<a href=\"%1\">%1</a>)").arg(projectMessUrl) + "</p></center></body></html>",
-								QUrl(projectMessUrl));
-					connect(qmc2ProjectMESS->webViewBrowser, SIGNAL(loadFinished(bool)), this, SLOT(projectMessLoadFinished(bool)));
-					qmc2ProjectMESS->webViewBrowser->load(QUrl(projectMessUrl));
-				} else {
-					// FIXME: There's currently a bug in QWebView::setHtml() so that it executes JavaScript twice.
-					qmc2ProjectMESS->webViewBrowser->setHtml(QString(QMC2_UNCOMPRESS(*qmc2ProjectMESSCache[listName + "_" + entryName])), QUrl(projectMessUrl));
-					qmc2ProjectMESS->webViewBrowser->load(QUrl(projectMessUrl));
-				}
-				qmc2ProjectMESS->homeUrl = QUrl(projectMessUrl);
-				qmc2LastProjectMESSItem = qmc2SoftwareList->currentItem;
-			}
-			break;
 		case QMC2_SWINFO_NOTES_PAGE:
-			if ( qmc2SoftwareList->currentItem != qmc2LastSoftwareNotesItem ) {
-				if ( !qmc2SoftwareNotesEditor ) {
-					QVBoxLayout *layout = new QVBoxLayout;
-					layout->setContentsMargins(left, top, right, bottom);
-					qmc2SoftwareNotesEditor = new HtmlEditor("SoftwareNotes", true, tabNotes);
-					layout->addWidget(qmc2SoftwareNotesEditor);
-					tabNotes->setLayout(layout);
-				} else {
-					qmc2SoftwareNotesEditor->save();
-					qmc2SoftwareNotesEditor->loadedContent.clear();
-					qmc2SoftwareNotesEditor->checkRevertStatus();
-				}
-
-				QString entryName = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME);
-				QString listName = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST);
-				QString softwareParent = softwareParentHash[listName + ":" + entryName];
-				if ( !softwareParent.isEmpty() ) {
-					QStringList softwareParentWords(softwareParent.split(':'));
-					if ( softwareParentWords.count() > 1 )
-						softwareParent = softwareParentWords[1];
-					else
-						softwareParent.clear();
-				}
-
-				QString softwareNotesFolder = qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareNotesFolder").toString();
-				QString softwareNotesTemplate = qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareNotesTemplate").toString();
-				bool useSoftwareNotesTemplate = qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/UseSoftwareNotesTemplate").toBool();
-				QString fileName = softwareNotesFolder + qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST) + "/" + qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME) + ".html";
-				qmc2SoftwareNotesEditor->setCurrentFileName(fileName);
-
-				qmc2SoftwareNotesEditor->enableFileNewFromTemplateAction(useSoftwareNotesTemplate);
-
-				qmc2SoftwareNotesEditor->templateMap.clear();
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_TITLE$"] = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_TITLE).toHtmlEscaped();
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_PUBLISHER$"] = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_PUBLISHER).toHtmlEscaped();
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_YEAR$"] = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_YEAR).toHtmlEscaped();
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_NAME$"] = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME);
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_PARENT_ID$"] = softwareParent;
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_LIST$"] = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST);
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_SUPPORTED$"] = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_SUPPORTED);
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_SUPPORTED_UT$"] = MachineList::reverseTranslations.value(qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_SUPPORTED));
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_STATUS$"] = qmc2SoftwareList->softwareStatus(qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST), qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME), true);
-				qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_STATUS_UT$"] = qmc2SoftwareList->softwareStatus(qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST), qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME), false);
-	      			qmc2SoftwareNotesEditor->templateMap["$GUI_LANGUAGE$"] = qmc2Config->value(QMC2_FRONTEND_PREFIX + "GUI/Language", "us").toString();
-	      			qmc2SoftwareNotesEditor->templateMap["$EMULATOR_VARIANT$"] = QMC2_EMU_NAME_VARIANT;
-	      			qmc2SoftwareNotesEditor->templateMap["$EMULATOR_TYPE$"] = QMC2_EMU_NAME;
-				if ( !qmc2SoftwareSnapshot ) {
-					qmc2SoftwareSnapshot = new SoftwareSnapshot(tabSnapshot);
-					QHBoxLayout *layout = new QHBoxLayout;
-					layout->addWidget(qmc2SoftwareSnapshot);
-					layout->setContentsMargins(0, 0, 0, 0);
-					tabSnapshot->setLayout(layout);
-				}
-				QDir dataDir(qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/DataDirectory").toString());
-				QString ghostPath(QDir::fromNativeSeparators(dataDir.absolutePath() + "/img/ghost.png"));
-#if defined(QMC2_OS_WIN)
-	      			qmc2SoftwareNotesEditor->templateMap["$GHOST_IMAGE$"] = "file:///" + ghostPath;
-				if ( qmc2SoftwareSnapshot->loadImage(listName, entryName) )
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_SNAPSHOT$"] = "file:///" + QDir::fromNativeSeparators(qmc2SoftwareSnapshot->absoluteImagePath());
-				else
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_SNAPSHOT$"] = "file:///" + ghostPath;
-#else
-	      			qmc2SoftwareNotesEditor->templateMap["$GHOST_IMAGE$"] = "file://" + ghostPath;
-				if ( qmc2SoftwareSnapshot->loadImage(listName, entryName) )
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_SNAPSHOT$"] = "file://" + QDir::fromNativeSeparators(qmc2SoftwareSnapshot->absoluteImagePath());
-				else
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_SNAPSHOT$"] = "file://" + ghostPath;
-#endif
-				QString swInfo = qmc2MachineList->datInfoDb()->softwareInfo(listName, entryName);
-				if ( !swInfo.isEmpty() ) {
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_INFO$"] = swInfo.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_INFO_STATUS$"] = "OK";
-				} else {
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_INFO$"] = tr("No data available");
-					qmc2SoftwareNotesEditor->templateMap["$SOFTWARE_INFO_STATUS$"] = "NO_DATA";
-				}
-				qmc2SoftwareNotesEditor->setCurrentTemplateName(softwareNotesTemplate);
-				qmc2SoftwareNotesEditor->stopLoading = true;
-
-				if ( QFile::exists(fileName) )
-					QTimer::singleShot(25, qmc2SoftwareNotesEditor, SLOT(loadCurrent()));
-				else {
-					if ( useSoftwareNotesTemplate )
-						QTimer::singleShot(25, qmc2SoftwareNotesEditor, SLOT(loadCurrentTemplate()));
-					else
-						qmc2SoftwareNotesEditor->fileNew();
-				}
-				qmc2SoftwareNotesEditor->setCurrentFileName(fileName);
-				qmc2LastSoftwareNotesItem = qmc2SoftwareList->currentItem;
-			}
 			break;
 		case QMC2_SWINFO_INFO_PAGE:
 			if ( qmc2SoftwareList->currentItem != qmc2LastSoftwareInfoItem ) {
@@ -3967,17 +3731,7 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 		}
 	}
 #endif
-
-	if ( !m_ignoreDetailTabChange && componentInfo->appliedFeatureList().at(currentIndex) != QMC2_SYSTEM_NOTES_INDEX ) {
-		if ( qmc2SystemNotesEditor ) {
-			qmc2SystemNotesEditor->hideTearOffMenus();
-			qmc2SystemNotesEditor->hide();
-		}
-	} else if ( qmc2SystemNotesEditor ) {
-		qmc2SystemNotesEditor->show();
-		qmc2SystemNotesEditor->raise();
-	}
-
+	
 	qmc2UseDefaultEmulator = qmc2Config->value(QString(QMC2_EMULATOR_PREFIX + "Configuration/%1/SelectedEmulator").arg(machineName), tr("Default")).toString() == tr("Default");
 
 	int left, top, right, bottom;
@@ -4088,45 +3842,6 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 			if ( qmc2YouTubeWidget )
 				qmc2YouTubeWidget->clearMessage();
 #endif
-			if ( qmc2CurrentItem != qmc2LastProjectMESSItem ) {
-				tabProjectMESS->setUpdatesEnabled(false);
-				if ( qmc2ProjectMESSLookup ) {
-					QLayout *vbl = tabProjectMESS->layout();
-					if ( vbl )
-						delete vbl;
-					qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "ProjectMESS/Zoom", qmc2ProjectMESSLookup->spinBoxZoom->value());
-					delete qmc2ProjectMESSLookup;
-					qmc2ProjectMESSLookup = 0;
-				}
-				gridLayout->getContentsMargins(&left, &top, &right, &bottom);
-				QVBoxLayout *layout = new QVBoxLayout;
-				layout->setContentsMargins(left, top, right, bottom);
-				qmc2ProjectMESSLookup = new MiniWebBrowser(tabProjectMESS);
-				qmc2ProjectMESSLookup->spinBoxZoom->setValue(qmc2Config->value(QMC2_FRONTEND_PREFIX + "ProjectMESS/Zoom", 100).toInt());
-				layout->addWidget(qmc2ProjectMESSLookup);
-				tabProjectMESS->setLayout(layout);
-				QString projectMessUrl;
-				QColor color = qmc2ProjectMESSLookup->webViewBrowser->palette().color(QPalette::WindowText);
-				QString machName = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_NAME);
-				qmc2ProjectMESSLookup->webViewBrowser->setStatusTip(tr("ProjectMESS page for system '%1'").arg(machName));
-				if ( !qmc2ProjectMESSCache.contains(machName) ) {
-					projectMessUrl = QString(QMC2_PROJECTMESS_PATTERN_URL).arg(machName);
-					qmc2ProjectMESSLookup->webViewBrowser->setHtml(
-							QString("<html><head></head><body><center><p><font color=\"#%1%2%3\"<b>").arg(color.red()).arg(color.green()).arg(color.blue()) +
-							tr("Fetching ProjectMESS page for system '%1', please wait...").arg(machName) +
-							"</font></b></p><p>" + QString("(<a href=\"%1\">%1</a>)").arg(projectMessUrl) + "</p></center></body></html>",
-							QUrl(projectMessUrl));
-					qmc2ProjectMESSLookup->webViewBrowser->load(QUrl(projectMessUrl));
-				} else {
-					projectMessUrl = QString(QMC2_PROJECTMESS_PATTERN_URL).arg(machName);
-					qmc2ProjectMESSLookup->webViewBrowser->setHtml(QString(QMC2_UNCOMPRESS(*qmc2ProjectMESSCache[machName])), QUrl(projectMessUrl));
-					qmc2ProjectMESSLookup->webViewBrowser->load(QUrl(projectMessUrl));
-				}
-				qmc2LastProjectMESSItem = qmc2CurrentItem;
-				connect(qmc2ProjectMESSLookup->webViewBrowser, SIGNAL(loadFinished(bool)), this, SLOT(projectMessSystemLoadFinished(bool)));
-				connect(qmc2ProjectMESSLookup->webViewBrowser, SIGNAL(loadStarted()), this, SLOT(projectMessSystemLoadStarted()));
-				tabProjectMESS->setUpdatesEnabled(true);
-			}
 			break;
 
 		case QMC2_CONFIG_INDEX:
@@ -4320,252 +4035,7 @@ void MainWindow::on_tabWidgetMachineDetail_currentChanged(int currentIndex)
 			if ( qmc2YouTubeWidget )
 				qmc2YouTubeWidget->clearMessage();
 #endif
-			if ( qmc2CurrentItem != qmc2LastSystemNotesItem ) {
-				qmc2LastSystemNotesItem = qmc2CurrentItem;
-				if ( !qmc2SystemNotesEditor ) {
-					int tabIndex = tabWidgetMachineDetail->indexOf(componentInfo->widget(QMC2_SYSTEM_NOTES_INDEX));
-					tabWidgetMachineDetail->setUpdatesEnabled(false);
-					tabWidgetMachineDetail->removeTab(tabIndex);
-					qmc2SystemNotesEditor = new HtmlEditor("SystemNotes", true);
-					tabWidgetMachineDetail->insertTab(tabIndex, qmc2SystemNotesEditor, QIcon(QString::fromUtf8(":/data/img/notes.png")), tr("&Notes"));
-					tabWidgetMachineDetail->setCurrentIndex(tabIndex);
-					tabWidgetMachineDetail->setUpdatesEnabled(true);
-					qmc2SystemNotesEditor->move(0, 0);
-					qmc2SystemNotesEditor->resize(qmc2SystemNotesEditor->parentWidget()->size());
-					qmc2SystemNotesEditor->show();
-					qmc2SystemNotesEditor->raise();
-				} else {
-					qmc2SystemNotesEditor->save();
-					qmc2SystemNotesEditor->loadedContent.clear();
-					qmc2SystemNotesEditor->checkRevertStatus();
-				}
-
-				qmc2SystemNotesEditor->stopLoading = true;
-				bool useSystemNotesTemplate = qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/UseSystemNotesTemplate").toBool();
-				QString fileName(qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SystemNotesFolder").toString() + machineName + ".html");
-				qmc2SystemNotesEditor->setCurrentFileName(fileName);
-				QString parentSystem(qmc2ParentHash.value(machineName));
-
-				qmc2SystemNotesEditor->enableFileNewFromTemplateAction(useSystemNotesTemplate);
-
-				qmc2SystemNotesEditor->templateMap.clear();
-				qmc2SystemNotesEditor->templateMap["$DESCRIPTION$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_MACHINE).toHtmlEscaped();
-				qmc2SystemNotesEditor->templateMap["$MANUFACTURER$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_MANU).toHtmlEscaped();
-				qmc2SystemNotesEditor->templateMap["$YEAR$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_YEAR).toHtmlEscaped();
-				qmc2SystemNotesEditor->templateMap["$CATEGORY$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_CATEGORY).toHtmlEscaped();
-				qmc2SystemNotesEditor->templateMap["$ID$"] = machineName;
-				qmc2SystemNotesEditor->templateMap["$PARENT_ID$"] = parentSystem;
-				qmc2SystemNotesEditor->templateMap["$VERSION$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_VERSION).toHtmlEscaped();
-				qmc2SystemNotesEditor->templateMap["$PLAYERS$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_PLAYERS);
-				qmc2SystemNotesEditor->templateMap["$ROM_TYPES$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_RTYPES);
-				qmc2SystemNotesEditor->templateMap["$DRIVER_STATUS$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_DRVSTAT);
-				qmc2SystemNotesEditor->templateMap["$DRIVER_STATUS_UT$"] = MachineList::reverseTranslations.value(qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_DRVSTAT));
-				qmc2SystemNotesEditor->templateMap["$ROM_STATUS$"] = qmc2MachineList->romStatus(machineName, true);
-				qmc2SystemNotesEditor->templateMap["$ROM_STATUS_UT$"] = qmc2MachineList->romStatus(machineName, false);
-				qmc2SystemNotesEditor->templateMap["$IS_BIOS$"] = qmc2MachineList->isBios(machineName) ? "true" : "false";
-				qmc2SystemNotesEditor->templateMap["$IS_DEVICE$"] = qmc2MachineList->isDevice(machineName) ? "true" : "false";
-				qmc2SystemNotesEditor->templateMap["$GUI_LANGUAGE$"] = qmc2Config->value(QMC2_FRONTEND_PREFIX + "GUI/Language", "us").toString();
-				qmc2SystemNotesEditor->templateMap["$EMULATOR_VARIANT$"] = QMC2_EMU_NAME_VARIANT;
-				qmc2SystemNotesEditor->templateMap["$EMULATOR_TYPE$"] = QMC2_EMU_NAME;
-				qmc2SystemNotesEditor->templateMap["$SOURCE_FILE$"] = qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_SRCFILE);
-				QDir dataDir(qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/DataDirectory").toString());
-				QString ghostPath(QDir::fromNativeSeparators(dataDir.absolutePath() + "/img/ghost.png"));
-#if defined(QMC2_OS_WIN)
-				qmc2SystemNotesEditor->templateMap["$GHOST_IMAGE$"] = "file:///" + ghostPath;
-#else
-				qmc2SystemNotesEditor->templateMap["$GHOST_IMAGE$"] = "file://" + ghostPath;
-#endif
-				QString videoThumbnailPath(QDir::fromNativeSeparators(dataDir.absolutePath() + "/img/video_thumbnail.png"));
-#if defined(QMC2_OS_WIN)
-				qmc2SystemNotesEditor->templateMap["$VIDEO_THUMBNAIL$"] = "file:///" + videoThumbnailPath;
-#else
-				qmc2SystemNotesEditor->templateMap["$VIDEO_THUMBNAIL$"] = "file://" + videoThumbnailPath;
-#endif
-				QString filePath;
-				if ( qmc2Preview ) {
-#if defined(QMC2_OS_WIN)
-					if ( qmc2Preview->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$PREVIEW_IMAGE$"] = "file:///" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$PREVIEW_IMAGE$"] = "file:///" + ghostPath;
-#else
-					if ( qmc2Preview->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$PREVIEW_IMAGE$"] = "file://" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$PREVIEW_IMAGE$"] = "file://" + ghostPath;
-#endif
-				}
-				if ( qmc2Flyer ) {
-#if defined(QMC2_OS_WIN)
-					if ( qmc2Flyer->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$FLYER_IMAGE$"] = "file:///" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$FLYER_IMAGE$"] = "file:///" + ghostPath;
-#else
-					if ( qmc2Flyer->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$FLYER_IMAGE$"] = "file://" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$FLYER_IMAGE$"] = "file://" + ghostPath;
-#endif
-				}
-				if ( qmc2Cabinet ) {
-#if defined(QMC2_OS_WIN)
-					if ( qmc2Cabinet->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$CABINET_IMAGE$"] = "file:///" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$CABINET_IMAGE$"] = "file:///" + ghostPath;
-#else
-					if ( qmc2Cabinet->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$CABINET_IMAGE$"] = "file://" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$CABINET_IMAGE$"] = "file://" + ghostPath;
-#endif
-				}
-				if ( qmc2Controller ) {
-#if defined(QMC2_OS_WIN)
-					if ( qmc2Controller->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$CONTROLLER_IMAGE$"] = "file:///" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$CONTROLLER_IMAGE$"] = "file:///" + ghostPath;
-#else
-					if ( qmc2Controller->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$CONTROLLER_IMAGE$"] = "file://" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$CONTROLLER_IMAGE$"] = "file://" + ghostPath;
-#endif
-				}
-				if ( qmc2Marquee ) {
-#if defined(QMC2_OS_WIN)
-					if ( qmc2Marquee->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$MARQUEE_IMAGE$"] = "file:///" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$MARQUEE_IMAGE$"] = "file:///" + ghostPath;
-					qmc2SystemNotesEditor->templateMap["$LOGO_IMAGE$"] = qmc2SystemNotesEditor->templateMap["$MARQUEE_IMAGE$"];
-#else
-					if ( qmc2Marquee->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$MARQUEE_IMAGE$"] = "file://" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$MARQUEE_IMAGE$"] = "file://" + ghostPath;
-					qmc2SystemNotesEditor->templateMap["$LOGO_IMAGE$"] = qmc2SystemNotesEditor->templateMap["$MARQUEE_IMAGE$"];
-#endif
-				}
-				if ( qmc2Title ) {
-#if defined(QMC2_OS_WIN)
-					if ( qmc2Title->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$TITLE_IMAGE$"] = "file:///" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$TITLE_IMAGE$"] = "file:///" + ghostPath;
-#else
-					if ( qmc2Title->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$TITLE_IMAGE$"] = "file://" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$TITLE_IMAGE$"] = "file://" + ghostPath;
-#endif
-				}
-				if ( qmc2PCB ) {
-#if defined(QMC2_OS_WIN)
-					if ( qmc2PCB->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$PCB_IMAGE$"] = "file:///" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$PCB_IMAGE$"] = "file:///" + ghostPath;
-#else
-					if ( qmc2PCB->loadImage(machineName, machineName, true, &filePath, false) )
-						qmc2SystemNotesEditor->templateMap["$PCB_IMAGE$"] = "file://" + QDir::fromNativeSeparators(filePath);
-					else
-						qmc2SystemNotesEditor->templateMap["$PCB_IMAGE$"] = "file://" + ghostPath;
-#endif
-				}
-				QString emuInfoKey(machineName);
-				if ( !qmc2MachineList->datInfoDb()->existsEmuInfo(emuInfoKey) ) {
-					emuInfoKey = parentSystem;
-					if ( !qmc2MachineList->datInfoDb()->existsEmuInfo(emuInfoKey) )
-						emuInfoKey.clear();
-				}
-				if ( !emuInfoKey.isEmpty() ) {
-					QString emuInfoText = qmc2MachineList->datInfoDb()->emuInfo(emuInfoKey);
-					if ( !emuInfoText.isEmpty() ) {
-						qmc2SystemNotesEditor->templateMap["$EMU_INFO$"] = emuInfoText.replace(QRegExp(QString("(\\w+://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
-						qmc2SystemNotesEditor->templateMap["$EMU_INFO_STATUS$"] = "OK";
-					} else {
-						qmc2SystemNotesEditor->templateMap["$EMU_INFO$"] = tr("No data available");
-						qmc2SystemNotesEditor->templateMap["$EMU_INFO_STATUS$"] = "NO_DATA";
-					}
-				} else {
-					qmc2SystemNotesEditor->templateMap["$EMU_INFO$"] = tr("No data available");
-					qmc2SystemNotesEditor->templateMap["$EMU_INFO_STATUS$"] = "NO_DATA";
-				}
-				QString videoSnapUrl;
-				foreach (QString videoSnapFolder, qmc2Config->value("MAME/FilesAndDirectories/VideoSnapFolder", QMC2_DEFAULT_DATA_PATH + "/vdo/").toString().split(";", QString::SkipEmptyParts)) {
-					foreach (QString formatExtension, videoSnapAllowedFormatExtensions) {
-						QFileInfo fi(QDir::cleanPath(videoSnapFolder + "/" + machineName + formatExtension));
-						if ( fi.exists() && fi.isReadable() ) {
-							videoSnapUrl = fi.absoluteFilePath();
-#if defined(QMC2_OS_WIN)
-							videoSnapUrl.prepend("file:///");
-#else
-							videoSnapUrl.prepend("file://");
-#endif
-							break;
-						}
-					}
-					if ( videoSnapUrl.isEmpty() ) { // parent fallback
-						if ( qmc2ParentImageFallback && qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/VideoFallback", 0).toInt() == 0 ) {
-							QString parentId = qmc2ParentHash.value(machineName);
-							if ( !parentId.isEmpty() ) {
-								foreach (QString formatExtension, videoSnapAllowedFormatExtensions) {
-									QFileInfo fi(QDir::cleanPath(videoSnapFolder + "/" + parentId + formatExtension));
-									if ( fi.exists() && fi.isReadable() ) {
-										videoSnapUrl = fi.absoluteFilePath();
-#if defined(QMC2_OS_WIN)
-										videoSnapUrl.prepend("file:///");
-#else
-										videoSnapUrl.prepend("file://");
-#endif
-										break;
-									}
-								}
-							}
-						}
-					}
-				}
-				qmc2SystemNotesEditor->templateMap["$VIDEO_SNAP_URL$"] = videoSnapUrl;
-				QString machineInfoKey(machineName);
-				if ( !qmc2MachineList->datInfoDb()->existsMachineInfo(machineInfoKey) ) {
-					machineInfoKey = parentSystem;
-					if ( !qmc2MachineList->datInfoDb()->existsMachineInfo(machineInfoKey) )
-						machineInfoKey.clear();
-				}
-				if ( !machineInfoKey.isEmpty() ) {
-					QString gameInfoText = qmc2MachineList->datInfoDb()->machineInfo(machineInfoKey);
-					if ( !gameInfoText.isEmpty() ) {
-						QString emulator = qmc2MachineList->datInfoDb()->machineInfoEmulator(machineInfoKey);
-						if ( emulator == "MESS" )
-							qmc2SystemNotesEditor->templateMap["$GAME_INFO$"] = messWikiToHtml(gameInfoText);
-						else
-							qmc2SystemNotesEditor->templateMap["$GAME_INFO$"] = gameInfoText.replace(QRegExp(QString("((http|https|ftp)://%1)").arg(urlSectionRegExp)), QLatin1String("<a href=\"\\1\">\\1</a>"));
-						qmc2SystemNotesEditor->templateMap["$GAME_INFO_STATUS$"] = "OK";
-					} else {
-						qmc2SystemNotesEditor->templateMap["$GAME_INFO$"] = tr("No data available");
-						qmc2SystemNotesEditor->templateMap["$GAME_INFO_STATUS$"] = "NO_DATA";
-					}
-				} else {
-					qmc2SystemNotesEditor->templateMap["$GAME_INFO$"] = tr("No data available");
-					qmc2SystemNotesEditor->templateMap["$GAME_INFO_STATUS$"] = "NO_DATA";
-				}
-				qmc2SystemNotesEditor->templateMap["$MACHINE_INFO$"] = qmc2SystemNotesEditor->templateMap["$GAME_INFO$"];
-				qmc2SystemNotesEditor->templateMap["$MACHINE_INFO_STATUS$"] = qmc2SystemNotesEditor->templateMap["$GAME_INFO_STATUS$"];
-				qmc2SystemNotesEditor->setCurrentTemplateName(qmc2Config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SystemNotesTemplate").toString());
-				if ( QFile::exists(fileName) )
-					QTimer::singleShot(25, qmc2SystemNotesEditor, SLOT(loadCurrent()));
-				else {
-					if ( useSystemNotesTemplate )
-						QTimer::singleShot(25, qmc2SystemNotesEditor, SLOT(loadCurrentTemplate()));
-					else
-						qmc2SystemNotesEditor->fileNew();
-				}
-
-				qmc2SystemNotesEditor->setCurrentFileName(fileName);
-			}
+			
 			break;
 
 		default:
@@ -5967,20 +5437,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
 	// search box options
 	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "Layout/MainWidget/NegateSearch", actionNegateSearch->isChecked());
 
-	if ( qmc2SystemNotesEditor ) {
-		qmc2SystemNotesEditor->stopLoading = true;
-		qmc2SystemNotesEditor->save();
-		qmc2SystemNotesEditor->close();
-		delete qmc2SystemNotesEditor;
-		qmc2SystemNotesEditor = 0;
-	}
-
 	if ( qmc2SoftwareList ) {
-		if ( qmc2SoftwareNotesEditor ) {
-			qmc2SoftwareNotesEditor->save();
-			qmc2SoftwareNotesEditor->close();
-			delete qmc2SoftwareNotesEditor;
-		}
 		if ( qmc2SoftwareList->fullyLoaded ) {
 			log(QMC2_LOG_FRONTEND, tr("saving current machine's favorite software"));
 			qmc2SoftwareList->save();
@@ -6039,12 +5496,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
 	log(QMC2_LOG_FRONTEND, tr("destroying open dialogs"));
 	if ( qmc2About )
 		delete qmc2About;
-	if ( qmc2DocBrowser ) {
-		qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "Layout/DocBrowser/Zoom", qmc2DocBrowser->browser->spinBoxZoom->value());
-		delete qmc2DocBrowser;
-	}
-	if ( qmc2ProjectMESSLookup )
-		delete qmc2ProjectMESSLookup;
+		
 	if ( qmc2ImageChecker ) {
 		qmc2ImageChecker->close();
 		delete qmc2ImageChecker;
@@ -8110,45 +7562,6 @@ void MainWindow::on_comboBoxViewSelect_currentIndexChanged(int index)
 	}
 }
 
-void MainWindow::projectMessLoadStarted()
-{
-}
-
-void MainWindow::projectMessLoadFinished(bool ok)
-{
-	if ( qmc2SoftwareList->currentItem && qmc2ProjectMESS && ok ) {
-		// store compressed page to in-memory cache
-		QString cacheKey = qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_LIST) + "_" + qmc2SoftwareList->currentItem->text(QMC2_SWLIST_COLUMN_NAME);
-		if ( qmc2ProjectMESSCache.contains(cacheKey) )
-			qmc2ProjectMESSCache.remove(cacheKey);
-		QString data("%1");
-		qmc2ProjectMESS->webViewBrowser->page()->toHtml([data](const QString &result) { data.arg(result); });
-		QByteArray cdata = QMC2_COMPRESS(data.toUtf8());
-		qmc2ProjectMESSCache.insert(cacheKey, new QByteArray(cdata), cdata.size());
-	}
-
-	// we only want to know this ONCE
-	disconnect(qmc2ProjectMESS->webViewBrowser, SIGNAL(loadFinished(bool)), this, SLOT(projectMessLoadFinished(bool)));
-}
-
-void MainWindow::projectMessSystemLoadStarted()
-{
-	// NOP
-}
-
-void MainWindow::projectMessSystemLoadFinished(bool ok)
-{
-	if ( ok ) {
-		QString data("%1");
-		qmc2ProjectMESSLookup->webViewBrowser->page()->toHtml([data](const QString &result) { data.arg(result); });
-		QByteArray projectMessData = QMC2_COMPRESS(data.toUtf8());
-    		QString machName(qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_NAME));
-		if ( qmc2ProjectMESSCache.contains(machName) )
-			qmc2ProjectMESSCache.remove(machName);
-		qmc2ProjectMESSCache.insert(machName, new QByteArray(projectMessData), projectMessData.size());
-	}
-}
-
 void MainWindow::startDownload(QWidget *forParent, QNetworkReply *reply, QString saveAsName, QString savePath)
 {
 	if ( !reply )
@@ -8256,11 +7669,6 @@ void MainWindow::checkActivity()
 			activityState = false;
 		}
 		isActiveState = false;
-	}
-
-	if ( qmc2SystemNotesEditor ) {
-		qmc2SystemNotesEditor->move(0, 0);
-		qmc2SystemNotesEditor->resize(qmc2SystemNotesEditor->parentWidget()->size());
 	}
 
 	if ( menuRank->isVisible() || menuRank->isTearOffMenuVisible() )
@@ -9364,20 +8772,6 @@ void MainWindow::commonWebSearch(QString baseUrl, QTreeWidgetItem *item)
 	wordList.removeDuplicates();
 	QString url(wordList.join("+"));
 	url.prepend(baseUrl);
-	if ( actionSearchInternalBrowser->isChecked() ) {
-		MiniWebBrowser *webBrowser = new MiniWebBrowser(0);
-		webBrowser->homeUrl = QUrl::fromUserInput(url);
-		webBrowser->setAttribute(Qt::WA_DeleteOnClose);
-		if ( qmc2Config->contains(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry") )
-			webBrowser->restoreGeometry(qmc2Config->value(QMC2_FRONTEND_PREFIX + "WebBrowser/Geometry").toByteArray());
-		else {
-			webBrowser->adjustSize();
-			webBrowser->move(QApplication::desktop()->screen()->rect().center() - webBrowser->rect().center());
-		}
-		connect(webBrowser->webViewBrowser->page(), SIGNAL(windowCloseRequested()), webBrowser, SLOT(close()));
-		webBrowser->show();
-		webBrowser->webViewBrowser->load(webBrowser->homeUrl);
-	} else
 		QDesktopServices::openUrl(QUrl::fromUserInput(url));
 }
 
@@ -9429,28 +8823,23 @@ void MainWindow::on_actionManualOpenInViewer_triggered(bool)
 		if ( !parentName.isEmpty() )
 			manualPaths = userDataDb->systemManualPaths(parentName);
 	}
-	if ( manualPaths.count() > 1 ) {
-		ItemSelector itemSelector(this, manualPaths);
-		itemSelector.setWindowTitle(tr("Manual selection"));
-		itemSelector.labelMessage->setText(tr("Multiple PDF manuals exist. Select the ones you want to open:"));
-		itemSelector.listWidgetItems->setSelectionMode(QAbstractItemView::ExtendedSelection);
-		if ( itemSelector.exec() != QDialog::Rejected ) {
-			QList<QListWidgetItem *> itemList(itemSelector.listWidgetItems->selectedItems());
-			for (int i = 0; i < itemList.count(); i++) {
-				QFileInfo fi(itemList.at(i)->text());
-				if ( actionManualInternalViewer->isChecked() )
-					viewPdf(fi.absoluteFilePath());
-				else
-					QDesktopServices::openUrl(QUrl::fromUserInput(fi.absoluteFilePath()));
-			}
-		}
-	} else if ( manualPaths.count() > 0 ) {
-		QFileInfo fi(manualPaths.first());
-		if ( actionManualInternalViewer->isChecked() )
-			viewPdf(fi.absoluteFilePath());
-		else
-			QDesktopServices::openUrl(QUrl::fromUserInput(fi.absoluteFilePath()));
-	}
+	if (manualPaths.count() > 1) {
+    ItemSelector itemSelector(this, manualPaths);
+    itemSelector.setWindowTitle(tr("Manual selection"));
+    itemSelector.labelMessage->setText(tr("Multiple manuals exist. Select the ones you want to open:"));
+    itemSelector.listWidgetItems->setSelectionMode(QAbstractItemView::ExtendedSelection);
+
+    if (itemSelector.exec() != QDialog::Rejected) {
+        QList<QListWidgetItem *> itemList(itemSelector.listWidgetItems->selectedItems());
+        for (int i = 0; i < itemList.count(); i++) {
+            QFileInfo fi(itemList.at(i)->text());
+            QDesktopServices::openUrl(QUrl::fromUserInput(fi.absoluteFilePath()));
+        }
+    }
+} else if (manualPaths.count() > 0) {
+    QFileInfo fi(manualPaths.first());
+    QDesktopServices::openUrl(QUrl::fromUserInput(fi.absoluteFilePath()));
+}
 }
 
 void MainWindow::checkSystemManualAvailability()
@@ -9757,9 +9146,7 @@ void MainWindow::stackedWidgetSpecial_setCurrentIndex(int index)
 			stackedWidgetSpecial->setCurrentIndex(QMC2_SPECIAL_DEFAULT_PAGE);
 			if ( tabWidgetSoftwareDetail->parent() == this )
 				tabWidgetSoftwareDetail->hide();
-			if ( qmc2SoftwareNotesEditor )
-				qmc2SoftwareNotesEditor->hideTearOffMenus();
-			adjustSplitter(vSplitter, tabWidgetLogsAndEmulators, vSplitterSizes, false);
+				adjustSplitter(vSplitter, tabWidgetLogsAndEmulators, vSplitterSizes, false);
 			if ( lastPageSoftware ) {
 				ComponentInfo *componentInfo = qmc2ComponentSetup->componentInfoHash().value("Component2");
 				switch ( componentInfo->appliedFeatureList().at(tabWidgetLogsAndEmulators->currentIndex()) ) {

@@ -19,7 +19,6 @@
 #include <QSplashScreen>
 #include <QNetworkAccessManager>
 #include <QCache>
-#include <QWebEngineSettings>
 
 #include "options.h"
 #include "emuopt.h"
@@ -38,7 +37,6 @@
 #include "keyseqscan.h"
 #include "romalyzer.h"
 #include "romstatusexport.h"
-#include "docbrowser.h"
 #include "componentsetup.h"
 #include "toolbarcustomizer.h"
 #include "paletteeditor.h"
@@ -65,7 +63,6 @@
 #if defined(QMC2_YOUTUBE_ENABLED)
 #include "youtubevideoplayer.h"
 #endif
-#include "htmleditor/htmleditor.h"
 #include "customidsetup.h"
 #include "rankitemwidget.h"
 #include "componentsetup.h"
@@ -127,7 +124,6 @@ extern ImageChecker *qmc2ImageChecker;
 extern ROMAlyzer *qmc2SystemROMAlyzer;
 extern ROMAlyzer *qmc2SoftwareROMAlyzer;
 extern ROMStatusExporter *qmc2ROMStatusExporter;
-extern DocBrowser *qmc2DocBrowser;
 extern int qmc2SortCriteria;
 extern Qt::SortOrder qmc2SortOrder;
 extern Settings *qmc2Config;
@@ -149,7 +145,6 @@ extern QHash<QString, QString> qmc2JoystickFunctionHash;
 extern bool qmc2JoystickIsCalibrating;
 #endif
 extern DeviceConfigurator *qmc2DeviceConfigurator;
-extern MiniWebBrowser *qmc2ProjectMESS;
 extern SoftwareList *qmc2SoftwareList;
 #if QMC2_USE_PHONON_API
 extern AudioEffectDialog *qmc2AudioEffectDialog;
@@ -161,8 +156,6 @@ extern QAbstractItemView::ScrollHint qmc2CursorPositioningMode;
 extern QFont *qmc2StartupDefaultFont;
 extern int qmc2SoftwareSnapPosition;
 extern int qmc2DefaultLaunchMode;
-extern HtmlEditor *qmc2SystemNotesEditor;
-extern HtmlEditor *qmc2SoftwareNotesEditor;
 extern QSplashScreen *qmc2SplashScreen;
 extern QCache<QString, ImagePixmap> qmc2ImagePixmapCache;
 extern QList<QTreeWidgetItem *> qmc2ExpandedMachineListItems;
@@ -465,8 +458,6 @@ void Options::apply()
 	QSize iconSizeLarge = iconSize + QSize(4, 4);
 	foreach (QWidget *widget, QApplication::allWidgets()) {
 		widget->setFont(f);
-		if ( widget->objectName() == "MiniWebBrowser" )
-			QTimer::singleShot(0, (MiniWebBrowser *)widget, SLOT(adjustIconSizes()));
 	}
 	if ( qmc2SplashScreen ) {
 		QFont splashFont = f;
@@ -600,15 +591,6 @@ void Options::apply()
 		if ( tb )
 			tb->setIconSize(iconSizeMiddle);
 	}
-	// global web-browser fonts
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::StandardFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::SerifFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::SansSerifFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::FantasyFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::CursiveFont, qApp->font().family());
-	QWebEngineSettings::defaultSettings()->setFontFamily(QWebEngineSettings::FixedFont, logFont.family());
-	QWebEngineSettings::defaultSettings()->setFontSize(QWebEngineSettings::DefaultFontSize, qApp->font().pointSize() + 1);
-	QWebEngineSettings::defaultSettings()->setFontSize(QWebEngineSettings::DefaultFixedFontSize, logFont.pointSize() + 1);
 #if QMC2_JOYSTICK == 1
 	pushButtonRescanJoysticks->setIconSize(iconSize);
 	pushButtonRemapJoystickFunction->setIconSize(iconSize);
@@ -716,11 +698,7 @@ void Options::apply()
 		((IconLineEdit *)qmc2SoftwareList->comboBoxSearch->lineEdit())->setIconSize(iconSizeMiddle);
 		if ( qmc2SoftwareList->exporter )
 			QTimer::singleShot(0, qmc2SoftwareList->exporter, SLOT(adjustIconSizes()));
-		if ( qmc2SoftwareNotesEditor )
-			qmc2SoftwareNotesEditor->adjustIconSizes();
-		if ( qmc2SystemNotesEditor )
-			qmc2SystemNotesEditor->adjustIconSizes();
-	}
+		}
 	qmc2MainWindow->pushButtonClearFinishedDownloads->setIconSize(iconSize);
 	qmc2MainWindow->pushButtonReloadSelectedDownloads->setIconSize(iconSize);
 	qmc2MainWindow->pushButtonStopSelectedDownloads->setIconSize(iconSize);
@@ -1050,14 +1028,6 @@ void Options::on_pushButtonApply_clicked()
 	needManualReload |= (config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareInfoDB").toString() != s);
 	invalidateSoftwareInfoDB |= (config->value(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareInfoDB").toString() != s);
 	config->setValue(QMC2_EMULATOR_PREFIX + "FilesAndDirectories/SoftwareInfoDB", lineEditSoftwareInfoDB->text());
-	if ( qmc2SystemNotesEditor ) {
-		qmc2SystemNotesEditor->enableFileNewFromTemplateAction(checkBoxUseSystemNotesTemplate->isChecked());
-		qmc2SystemNotesEditor->setCurrentTemplateName(lineEditSystemNotesTemplate->text());
-	}
-	if ( qmc2SoftwareNotesEditor ) {
-		qmc2SoftwareNotesEditor->enableFileNewFromTemplateAction(checkBoxUseSoftwareNotesTemplate->isChecked());
-		qmc2SoftwareNotesEditor->setCurrentTemplateName(lineEditSoftwareNotesTemplate->text());
-	}
 	bool catverUsed = checkBoxUseCatverIni->isChecked();
 	needReload |= (config->value(QMC2_FRONTEND_PREFIX + "MachineList/UseCatverIni", false).toBool() != catverUsed );
 	config->setValue(QMC2_FRONTEND_PREFIX + "MachineList/UseCatverIni", catverUsed);

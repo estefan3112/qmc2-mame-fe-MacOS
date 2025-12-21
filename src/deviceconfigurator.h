@@ -316,8 +316,6 @@ class DeviceConfigurator : public QWidget, public Ui::DeviceConfigurator
 		void treeViewFileChooser_sectionResized(int, int, int);
 		void comboBoxChooserFilterPattern_editTextChanged_delayed();
 		void treeViewFileChooser_toggleArchive();
-		void treeViewFileChooser_viewPdf();
-		void treeViewFileChooser_viewHtml();
 		void treeViewFileChooser_expandRequested();
 		void treeViewFileChooser_openFolder();
 		void treeViewFileChooser_openFileExternally();

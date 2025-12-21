@@ -32,7 +32,6 @@
 #include "title.h"
 #include "pcb.h"
 #include "romstatusexport.h"
-#include "miniwebbrowser.h"
 #include "romalyzer.h"
 #include "macros.h"
 #include "mz_compat.h"
@@ -43,7 +42,6 @@
 #if defined(QMC2_YOUTUBE_ENABLED)
 #include "youtubevideoplayer.h"
 #endif
-#include "htmleditor/htmleditor.h"
 #include "aspectratiolabel.h"
 #include "processmanager.h"
 #if defined(QMC2_LIBARCHIVE_ENABLED)
@@ -104,7 +102,6 @@ extern QMap<QString, ArchiveFile *> qmc2IconArchiveMap;
 #endif
 extern QHash<QString, QIcon> qmc2IconHash;
 extern QTreeWidgetItem *qmc2LastProjectMESSItem;
-extern MiniWebBrowser *qmc2ProjectMESSLookup;
 extern QHash<QString, QTreeWidgetItem *> qmc2CategoryItemHash;
 extern QHash<QString, QTreeWidgetItem *> qmc2VersionItemHash;
 extern DemoModeDialog *qmc2DemoModeDialog;
@@ -112,8 +109,6 @@ extern DemoModeDialog *qmc2DemoModeDialog;
 extern YouTubeVideoPlayer *qmc2YouTubeWidget;
 extern QTreeWidgetItem *qmc2LastYouTubeItem;
 #endif
-extern HtmlEditor *qmc2SystemNotesEditor;
-extern HtmlEditor *qmc2SoftwareNotesEditor;
 extern QList<QTreeWidgetItem *> qmc2ExpandedMachineListItems;
 extern MachineList *qmc2MachineList;
 extern bool qmc2TemplateCheck;
@@ -440,16 +435,6 @@ void MachineList::load()
 		qmc2DeviceConfigurator = 0;
 	}
 	qmc2LastDeviceConfigItem = 0;
-	if ( qmc2SystemNotesEditor ) {
-		qmc2SystemNotesEditor->save();
-		qmc2SystemNotesEditor->closeXmlBuffer();
-		qmc2SystemNotesEditor->clearContent();
-	}
-	if ( qmc2SoftwareNotesEditor ) {
-		qmc2SoftwareNotesEditor->save();
-		qmc2SoftwareNotesEditor->closeXmlBuffer();
-		qmc2SoftwareNotesEditor->clearContent();
-	}
 	if ( qmc2SoftwareList ) {
 		if ( qmc2SoftwareList->isLoading ) {
 			qmc2SoftwareList->interruptLoad = true;
@@ -471,14 +456,6 @@ void MachineList::load()
 	systemSoftwareFilterHash.clear();
 	qmc2LastMachineInfoItem = 0;
 	qmc2LastEmuInfoItem = 0;
-	if ( qmc2ProjectMESSLookup ) {
-		qmc2ProjectMESSLookup->setVisible(false);
-		QLayout *vbl = qmc2MainWindow->tabProjectMESS->layout();
-		if ( vbl )
-			delete vbl;
-		delete qmc2ProjectMESSLookup;
-		qmc2ProjectMESSLookup = 0;
-	}
 	qmc2LastProjectMESSItem = 0;
 #if defined(QMC2_YOUTUBE_ENABLED)
 	qmc2LastYouTubeItem = 0;

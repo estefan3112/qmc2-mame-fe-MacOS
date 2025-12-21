@@ -239,12 +239,9 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void on_actionSoftwareROMAlyzer_triggered(bool checked = false);
 		void on_actionExportROMStatus_triggered(bool checked = false);
 		void on_actionDemoMode_triggered(bool checked = false);
-		void on_actionNewBrowserWindow_triggered(bool checked = false);
-		void on_actionNewPdfViewer_triggered(bool checked = false);
 		void on_actionNewFilteredView_triggered(bool checked = false);
 		void on_actionClearImageCache_triggered(bool checked = false);
 		void on_actionClearIconCache_triggered(bool checked = false);
-		void on_actionClearProjectMESSCache_triggered(bool checked = false);
 #if defined(QMC2_YOUTUBE_ENABLED)
 		void on_actionClearYouTubeCache_triggered(bool checked = false);
 #endif
@@ -262,7 +259,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void on_actionFullscreenToggle_triggered(bool checked = false);
 
 		// help menu
-		void on_actionDocumentation_triggered(bool checked = false);
 		void on_actionAbout_triggered(bool checked = false);
 		void on_actionHomepage_triggered(bool checked = false);
 		void on_actionWiki_triggered(bool checked = false);
@@ -463,10 +459,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void on_treeWidgetVersionView_customContextMenuRequested(const QPoint &);
 		void viewByVersion();
 		void actionCustomView_triggered();
-		void projectMessSystemLoadStarted();
-		void projectMessSystemLoadFinished(bool);
-		void projectMessLoadStarted();
-		void projectMessLoadFinished(bool);
 		void processOutputNotifier(int, const QString &, const QString &);
 		void on_hSplitter_splitterMoved(int, int);
 		void on_vSplitter_splitterMoved(int, int);
@@ -488,8 +480,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void searchIncludeBiosSetsTriggered(bool);
 		void searchIncludeDeviceSetsTriggered(bool);
 		void updateTabWidgets();
-		void viewPdf(QString filePath = QString());
-		void viewHtml(QString filePath = QString());
 		void showLoadAnim(QString text, bool enable = true);
 		void hideLoadAnim() { showLoadAnim(QString(), false); }
 		void actionRebuildRom_triggered(bool checked = false);
@@ -597,6 +587,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		QTimer m_vlRankUpdateTimer;
 		bool m_ignoreSelectionChange;
 		bool m_ignoreDetailTabChange;
+		void on_actionClearProjectMESSCache_triggered(bool);
 #if defined(QMC2_YOUTUBE_ENABLED)
 		bool m_videoInfoMapLoaded;
 #endif

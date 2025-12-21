@@ -1,6 +1,6 @@
 # general project settings
 isEmpty(TARGET):TARGET = qmc2
-QT += core gui widgets xml xmlpatterns network sql svg testlib webenginewidgets
+QT += core gui widgets xml xmlpatterns network sql svg testlib
 win32 {
 	QT += winextras
 }
@@ -15,7 +15,6 @@ INCLUDEPATH += src/ \
 TEMPLATE = app
 FORMS += ui/qmc2main.ui \
 	ui/options.ui \
-	ui/docbrowser.ui \
 	ui/about.ui \
 	ui/welcome.ui \
 	ui/imagechecker.ui \
@@ -36,7 +35,6 @@ FORMS += ui/qmc2main.ui \
 	ui/componentsetup.ui \
 	ui/machinelistviewer.ui \
 	ui/iconcachesetupdialog.ui \
-	ui/miniwebbrowser.ui \
 	ui/youtubevideoplayer.ui \
 	ui/videoitemwidget.ui \
 	ui/embedderopt.ui \
@@ -66,13 +64,9 @@ FORMS += ui/qmc2main.ui \
 	ui/visiblecolumnsetup.ui \
 	ui/manualscanner.ui \
 	ui/rompathcleaner.ui \
-	ui/setupwizard.ui \
-	src/htmleditor/htmleditor.ui \
-	src/htmleditor/inserthtmldialog.ui \
-	src/htmleditor/tablepropertydialog.ui
+	ui/setupwizard.ui
 SOURCES += src/qmc2main.cpp \
 	src/options.cpp \
-	src/docbrowser.cpp \
 	src/about.cpp \
 	src/welcome.cpp \
 	src/imagechecker.cpp \
@@ -110,7 +104,6 @@ SOURCES += src/qmc2main.cpp \
 	src/comboeditwidget.cpp \
 	src/comboboxwidget.cpp \
 	src/componentsetup.cpp \
-	src/miniwebbrowser.cpp \
 	src/youtubevideoplayer.cpp \
 	src/videoitemwidget.cpp \
 	src/downloaditem.cpp \
@@ -162,8 +155,6 @@ SOURCES += src/qmc2main.cpp \
 	src/rompathcleaner.cpp \
 	src/setupwizard.cpp \
 	src/clickablelabel.cpp \
-	src/htmleditor/htmleditor.cpp \
-	src/htmleditor/highlighter.cpp \
 	src/lzma/7zAlloc.c \
 	src/lzma/7zBuf2.c \
 	src/lzma/7zBuf.c \
@@ -195,7 +186,6 @@ SOURCES += src/qmc2main.cpp \
 	src/lzma/Sha256Opt.c
 HEADERS += src/qmc2main.h \
 	src/options.h \
-	src/docbrowser.h \
 	src/about.h \
 	src/welcome.h \
 	src/imagechecker.h \
@@ -234,7 +224,6 @@ HEADERS += src/qmc2main.h \
 	src/comboeditwidget.h \
 	src/comboboxwidget.h \
 	src/componentsetup.h \
-	src/miniwebbrowser.h \
 	src/youtubevideoplayer.h \
 	src/videoitemwidget.h \
 	src/downloaditem.h \
@@ -288,8 +277,6 @@ HEADERS += src/qmc2main.h \
 	src/rompathcleaner.h \
 	src/setupwizard.h \
 	src/clickablelabel.h \
-	src/htmleditor/htmleditor.h \
-	src/htmleditor/highlighter.h \
 	src/arcade/keysequences.h
 TRANSLATIONS += data/lng/qmc2_de.ts \
 	data/lng/qmc2_el.ts \

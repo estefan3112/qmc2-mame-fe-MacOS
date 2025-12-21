@@ -1712,26 +1712,6 @@ void SoftwareList::on_toolButtonManualOpenInViewer_clicked()
 			manualPaths = userDataDb->softwareManualPaths(parentWords.at(0), parentWords.at(1));
 		}
 	}
-	if ( manualPaths.count() > 1 ) {
-		ItemSelector itemSelector(this, manualPaths);
-		itemSelector.setWindowTitle(tr("Manual selection"));
-		itemSelector.labelMessage->setText(tr("Multiple PDF manuals exist. Select the ones you want to open:"));
-		itemSelector.listWidgetItems->setSelectionMode(QAbstractItemView::ExtendedSelection);
-		if ( itemSelector.exec() != QDialog::Rejected ) {
-			QList<QListWidgetItem *> itemList(itemSelector.listWidgetItems->selectedItems());
-			for (int i = 0; i < itemList.count(); i++) {
-				if ( qmc2MainWindow->actionManualInternalViewer->isChecked() )
-					qmc2MainWindow->viewPdf(itemList.at(i)->text());
-				else
-					QDesktopServices::openUrl(QUrl::fromUserInput(itemList.at(i)->text()));
-			}
-		}
-	} else if ( manualPaths.count() > 0 ) {
-		if ( qmc2MainWindow->actionManualInternalViewer->isChecked() )
-			qmc2MainWindow->viewPdf(manualPaths.at(0));
-		else
-			QDesktopServices::openUrl(QUrl::fromUserInput(manualPaths.at(0)));
-	}
 }
 
 void SoftwareList::checkSoftwareManualAvailability()

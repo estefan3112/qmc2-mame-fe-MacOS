@@ -398,32 +398,12 @@ DeviceConfigurator::DeviceConfigurator(QString machine, QWidget *parent) :
 	connect(action, SIGNAL(triggered()), this, SLOT(treeViewFileChooser_toggleArchive()));
 	actionChooserToggleArchive = action;
 
-	action = fileChooserContextMenu->addAction(tr("View PDF..."));
-	action->setToolTip(s); action->setStatusTip(s);
-	icon = FileIconProvider::fileIcon("dummy.pdf");
-	if ( icon.isNull() )
-		icon = QIcon(QString::fromUtf8(":/data/img/pdf.png"));
-	action->setIcon(icon);
-	connect(action, SIGNAL(triggered()), this, SLOT(treeViewFileChooser_viewPdf()));
-	actionChooserViewPdf = action;
-
-	action = fileChooserContextMenu->addAction(tr("View Postscript..."));
-	action->setToolTip(s); action->setStatusTip(s);
-	icon = FileIconProvider::fileIcon("dummy.ps");
-	if ( icon.isNull() )
-		icon = QIcon(QString::fromUtf8(":/data/img/postscript.png"));
-	action->setIcon(icon);
-	connect(action, SIGNAL(triggered()), this, SLOT(treeViewFileChooser_viewPdf()));
-	actionChooserViewPostscript = action;
-
 	action = fileChooserContextMenu->addAction(tr("View HTML..."));
 	action->setToolTip(s); action->setStatusTip(s);
 	icon = FileIconProvider::fileIcon("dummy.html");
 	if ( icon.isNull() )
 		icon = QIcon(QString::fromUtf8(":/data/img/html.png"));
 	action->setIcon(icon);
-	connect(action, SIGNAL(triggered()), this, SLOT(treeViewFileChooser_viewHtml()));
-	actionChooserViewHtml = action;
 
 	fileChooserContextMenu->addSeparator();
 	action = fileChooserContextMenu->addAction(tr("Open e&xternally..."));
@@ -1619,34 +1599,31 @@ void DeviceConfigurator::dirChooserUseCurrentAsDefaultDirectory()
 
 void DeviceConfigurator::on_treeViewFileChooser_customContextMenuRequested(const QPoint &p)
 {
-	modelIndexFileModel = treeViewFileChooser->indexAt(p);
-	actionChooserPlay->setVisible(true);
+    modelIndexFileModel = treeViewFileChooser->indexAt(p);
+    actionChooserPlay->setVisible(true);
+
 #if defined(QMC2_EMBEDDER_SUPPORTED)
-	actionChooserPlayEmbedded->setVisible(true);
+    actionChooserPlayEmbedded->setVisible(true);
+    actionChooserPlayEmbedded->setVisible(false);
 #endif
-	if ( modelIndexFileModel.isValid() ) {
-		actionChooserViewPdf->setVisible(m_fileModel->isPdf(modelIndexFileModel));
-		actionChooserViewPostscript->setVisible(m_fileModel->isPostscript(modelIndexFileModel));
-		actionChooserViewHtml->setVisible(m_fileModel->isHtml(modelIndexFileModel));
-		if ( m_fileModel->isZip(modelIndexFileModel) ) {
-			actionChooserToggleArchive->setText(treeViewFileChooser->isExpanded(modelIndexFileModel) ? tr("&Close archive") : tr("&Open archive"));
-			actionChooserToggleArchive->setVisible(true);
-		} else
-			actionChooserToggleArchive->setVisible(false);
-		if ( m_fileModel->isFolder(modelIndexFileModel) ) {
-			actionChooserPlay->setVisible(false);
-#if defined(QMC2_EMBEDDER_SUPPORTED)
-			actionChooserPlayEmbedded->setVisible(false);
-#endif
-			actionChooserOpenFolder->setVisible(true);
-			actionChooserOpenExternally->setVisible(false);
-		} else {
-			actionChooserOpenFolder->setVisible(false);
-			actionChooserOpenExternally->setVisible(!m_fileModel->isZipContent(modelIndexFileModel));
-		}
-		fileChooserContextMenu->move(qmc2MainWindow->adjustedWidgetPosition(treeViewFileChooser->viewport()->mapToGlobal(p), fileChooserContextMenu));
-		fileChooserContextMenu->show();
-	}
+
+    // ✅ Use QFileInfo instead of missing FileSystemModel methods
+    QString path = m_fileModel->fileName(modelIndexFileModel);
+    QFileInfo info(path);
+
+    if (info.isDir()) {
+        actionChooserOpenFolder->setVisible(true);
+        actionChooserOpenExternally->setVisible(false);
+    } else {
+        actionChooserOpenFolder->setVisible(false);
+        actionChooserOpenExternally->setVisible(!m_fileModel->isZipContent(modelIndexFileModel));
+    }
+
+    fileChooserContextMenu->move(
+        qmc2MainWindow->adjustedWidgetPosition(
+            treeViewFileChooser->viewport()->mapToGlobal(p),
+            fileChooserContextMenu));
+    fileChooserContextMenu->show();
 }
 
 void DeviceConfigurator::on_treeViewFileChooser_clicked(const QModelIndex &index)
@@ -1694,20 +1671,6 @@ void DeviceConfigurator::treeViewFileChooser_toggleArchive()
 			m_fileModel->sortOpenZip(index, treeViewFileChooser->header()->sortIndicatorSection(), treeViewFileChooser->header()->sortIndicatorOrder());
 		}
 	}
-}
-
-void DeviceConfigurator::treeViewFileChooser_viewPdf()
-{
-	QModelIndexList selected(treeViewFileChooser->selectionModel()->selectedIndexes());
-	if ( selected.count() > 0 )
-		qmc2MainWindow->viewPdf(m_fileModel->fileName(selected.first()));
-}
-
-void DeviceConfigurator::treeViewFileChooser_viewHtml()
-{
-	QModelIndexList selected(treeViewFileChooser->selectionModel()->selectedIndexes());
-	if ( selected.count() > 0 )
-		qmc2MainWindow->viewHtml(m_fileModel->fileName(selected.first()));
 }
 
 void DeviceConfigurator::treeViewFileChooser_openFileExternally()
