@@ -2234,9 +2234,13 @@ void MachineList::loadFinished(int exitCode, QProcess::ExitStatus exitStatus)
 	qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("done (loading XML data and recreating cache, elapsed time = %1)").arg(elapsedTime.toString("mm:ss.zzz")));
 	mainProgressBar->reset();
 	qmc2EarlyReloadActive = false;
-	if ( loadProc )
-		delete loadProc;
-	loadProc = 0;
+	if ( loadProc ) {
+		// Break possible future re-entrancy
+        loadProc->disconnect(this);
+        loadProc->deleteLater();
+        loadProc = nullptr;
+	 }
+		
 	if ( romStateCache.isOpen() )
 		romStateCache.close();
 	xmlDb()->commitTransaction();
@@ -2294,9 +2298,19 @@ void MachineList::loadReadyReadStandardOutput()
 	static QString currentSetName;
 	static QRegExp rxDescYearManu("\\<description\\>$|\\<year\\>$|\\<manufacturer\\>$");
 
+	// NEW: basic safety guard
+    if (!loadProc) {
+        qWarning() << "loadReadyReadStandardOutput: loadProc is null, ignoring";
+        return;
+    }
+
+
 	// this makes the GUI much more responsive, but is HAS to be called before loadProc->readAllStandardOutput()!
-	if ( QCoreApplication::hasPendingEvents() )
-		qApp->processEvents();
+	// let's comment this out for the time being (2 lines):
+	//if ( QCoreApplication::hasPendingEvents() )
+	//	qApp->processEvents();
+
+
 #if defined(QMC2_OS_WIN)
 	QString readBuffer(QString::fromUtf8(loadProc->readAllStandardOutput()));
 #else
