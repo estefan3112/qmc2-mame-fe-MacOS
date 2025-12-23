@@ -39,9 +39,6 @@
 #include "demomode.h"
 #include "deviceconfigurator.h"
 #include "softwarelist.h"
-#if defined(QMC2_YOUTUBE_ENABLED)
-#include "youtubevideoplayer.h"
-#endif
 #include "aspectratiolabel.h"
 #include "processmanager.h"
 #if defined(QMC2_LIBARCHIVE_ENABLED)
