@@ -47,6 +47,7 @@
 #include "marquee.h"
 #include "title.h"
 #include "pcb.h"
+#include "videosnapplayerwidget.h"
 #include "about.h"
 #include "welcome.h"
 #include "imagechecker.h"
@@ -80,9 +81,6 @@
 #if defined(QMC2_OS_UNIX)
 #include "keyseqscan.h"
 #include "x11_tools.h"
-#endif
-#if defined(QMC2_YOUTUBE_ENABLED)
-#include "youtubevideoplayer.h"
 #endif
 #if defined(QMC2_OS_WIN)
 #include "windows_tools.h"
@@ -509,9 +507,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	tabWidgetEmbeddedEmulators->removeTab(0);
 	tabWidgetMachineList->removeTab(tabWidgetMachineList->indexOf(tabEmbeddedEmus));
 
-#if !defined(QMC2_YOUTUBE_ENABLED)
-	actionClearYouTubeCache->setVisible(false);
-#endif
 #if QMC2_MULTIMEDIA_ENABLED
 	toolButtonAudioSetupEffects->setVisible(false);
 #endif
@@ -2512,28 +2507,6 @@ void MainWindow::on_actionClearProjectMESSCache_triggered(bool)
 	log(QMC2_LOG_FRONTEND, tr("ProjectMESS in-memory cache cleared (%1)").arg(cacheStatus));
 }
 
-#if defined(QMC2_YOUTUBE_ENABLED)
-void MainWindow::on_actionClearYouTubeCache_triggered(bool)
-{
-	QDir youTubeCacheDir(qmc2Config->value(QMC2_FRONTEND_PREFIX + "YouTubeWidget/CacheDirectory").toString());
-	quint64 removedBytes = 0, removedFiles = 0;
-	if ( youTubeCacheDir.exists() ) {
-		QStringList youTubeCacheFiles(youTubeCacheDir.entryList(QStringList("*")));
-		foreach (QString youTubeCacheFile, youTubeCacheFiles) {
-			QFileInfo fi(youTubeCacheDir.filePath(youTubeCacheFile));
-			qint64 fSize = fi.size();
-			if ( youTubeCacheDir.remove(youTubeCacheFile) ) {
-				removedBytes += fSize;
-				removedFiles++;
-			}
-			qApp->processEvents();
-		}
-	}
-	QString removalInfo(tr("removed %n byte(s) in %1", "", removedBytes).arg(tr("%n file(s)", "", removedFiles)));
-	log(QMC2_LOG_FRONTEND, tr("YouTube on-disk cache cleared (%1)").arg(removalInfo));
-}
-#endif
-
 void MainWindow::on_actionClearROMStateCache_triggered(bool)
 {
 	if ( !qmc2ForceCacheRefresh ) {
@@ -3073,6 +3046,9 @@ void MainWindow::on_listWidgetSearch_currentItemChanged(QListWidgetItem *current
 		treeWidgetMachineList->clearSelection();
 		qmc2CurrentItem = mlItem;
 		treeWidgetMachineList->setCurrentItem(mlItem);
+
+		// ⭐ Notify all detail widgets (including your VideoSnapPlayerWidget)
+        emit currentMachineChanged(qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_NAME));
 	}
 	isActive = false;
 }
@@ -3328,6 +3304,17 @@ void MainWindow::on_tabWidgetMachineList_currentChanged(int currentIndex)
 	}
 
 	ImageWidget::updateArtwork();
+
+	// --- Video Snap Player tab ---
+	tabVideo = new QWidget;
+	QHBoxLayout *videoLayout = new QHBoxLayout;
+
+	videoSnapPlayer = new VideoSnapPlayerWidget(tabVideo);
+	videoLayout->addWidget(videoSnapPlayer);
+	videoLayout->setContentsMargins(0, 0, 0, 0);
+
+	tabVideo->setLayout(videoLayout);
+	tabWidgetMachineDetail->addTab(tabVideo, tr("Video"));
 
 	// show / hide machine status indicator
 	if ( qmc2Config->value(QMC2_FRONTEND_PREFIX + "GUI/MachineStatusIndicator").toBool() ) {
@@ -4347,8 +4334,10 @@ void MainWindow::on_treeWidgetMachineList_currentItemChanged(QTreeWidgetItem *cu
 						treeWidgetMachineList->setCurrentItem(current);
 				}
 			}
-		} else
+		} else {
 			qmc2CurrentItem = current;
+			emit currentMachineChanged(qmc2CurrentItem->text(QMC2_MACHINELIST_COLUMN_NAME));
+		}
 	}
 	qmc2CheckItemVisibility = true;
 	if ( qmc2UpdateDelay > 0 )
@@ -10074,9 +10063,6 @@ void MainWindow::initShortcuts()
 	qmc2ShortcutHash["Ctrl+Q"].second = actionExitStop;
 #else
 	qmc2ShortcutHash["Ctrl+X"].second = actionExitStop;
-#endif
-#if defined(QMC2_YOUTUBE_ENABLED)
-	qmc2ShortcutHash["Ctrl+Y"].second = actionClearYouTubeCache;
 #endif
 	qmc2ShortcutHash["Ctrl+Z"].second = actionSystemROMAlyzer;
 	qmc2ShortcutHash["Ctrl+W"].second = actionSoftwareROMAlyzer;
