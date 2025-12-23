@@ -1667,15 +1667,16 @@
              <string>Softwar&amp;e list</string>
             </attribute>
            </widget>
-           <widget class="QWidget" name="tabYouTube">
-            <attribute name="icon">
-             <iconset resource="../qmc2.qrc">
-              <normaloff>:/data/img/youtube.png</normaloff>:/data/img/youtube.png</iconset>
-            </attribute>
-            <attribute name="title">
-             <string>&amp;YouTube</string>
-            </attribute>
-           </widget>
+<!--Any further use for this widget?
+///        <widget class="QWidget" name="tabYouTube">
+///         <attribute name="icon">
+///          <iconset resource="../qmc2.qrc">
+///          <normaloff>:/data/img/youtube.png</normaloff>:/data/img/youtube.png</iconset>
+///         </attribute>
+///         <attribute name="title">
+///          <string>&amp;YouTube</string>
+///         </attribute>
+///        </widget>-->
            <widget class="QWidget" name="tabSystemNotes">
             <attribute name="icon">
              <iconset resource="../qmc2.qrc">
@@ -2611,7 +2612,6 @@
      <addaction name="actionClearImageCache"/>
      <addaction name="actionClearIconCache"/>
      <addaction name="actionClearProjectMESSCache"/>
-     <addaction name="actionClearYouTubeCache"/>
      <addaction name="separator"/>
      <addaction name="actionRecreateTemplateMap"/>
      <addaction name="actionCheckTemplateMap"/>
@@ -3710,20 +3710,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+F9</string>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::ApplicationShortcut</enum>
-   </property>
-  </action>
-  <action name="actionClearYouTubeCache">
-   <property name="text">
-    <string>Clear YouTube cache</string>
-   </property>
-   <property name="statusTip">
-    <string>Clear YouTube cache</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Y</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
