@@ -35,7 +35,6 @@ FORMS += ui/qmc2main.ui \
 	ui/componentsetup.ui \
 	ui/machinelistviewer.ui \
 	ui/iconcachesetupdialog.ui \
-	ui/youtubevideoplayer.ui \
 	ui/videoitemwidget.ui \
 	ui/embedderopt.ui \
 	ui/demomode.ui \
@@ -104,7 +103,7 @@ SOURCES += src/qmc2main.cpp \
 	src/comboeditwidget.cpp \
 	src/comboboxwidget.cpp \
 	src/componentsetup.cpp \
-	src/youtubevideoplayer.cpp \
+	src/videosnapplayerwidget.cpp \
 	src/videoitemwidget.cpp \
 	src/downloaditem.cpp \
 	src/embedder.cpp \
@@ -224,7 +223,7 @@ HEADERS += src/qmc2main.h \
 	src/comboeditwidget.h \
 	src/comboboxwidget.h \
 	src/componentsetup.h \
-	src/youtubevideoplayer.h \
+	src/videosnapplayerwidget.h \
 	src/videoitemwidget.h \
 	src/downloaditem.h \
 	src/embedder.h \
