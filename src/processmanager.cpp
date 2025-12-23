@@ -8,7 +8,6 @@
 #include "qmc2main.h"
 #include "embedder.h"
 #include "options.h"
-#include "youtubevideoplayer.h"
 #include "macros.h"
 
 // external global variables
