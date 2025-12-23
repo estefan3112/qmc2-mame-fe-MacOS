@@ -31,6 +31,8 @@
 #include "romstatefilter.h"
 #include "machinelistviewer.h"
 
+
+
 class ProxyStyle : public QProxyStyle
 {
 	public:
@@ -64,9 +66,15 @@ class SearchBoxKeyEventFilter : public QObject
 		bool eventFilter(QObject *obj, QEvent *event);
 };
 
+// ⭐ Add this forward declaration here
+class VideoSnapPlayerWidget;
+
 class MainWindow : public QMainWindow, public Ui::MainWindow
 {
 	Q_OBJECT
+
+signals:
+    void currentMachineChanged(const QString &machineName);
 
 	public:
 		bool isActiveState;
@@ -107,6 +115,8 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		QList<QAction *> rebuildRomActions;
 		QList<QAction *> contextMenuPlayActions;
 		QStringList videoSnapAllowedFormatExtensions;
+		QWidget *tabVideo;
+        VideoSnapPlayerWidget *videoSnapPlayer;
 #if QMC2_JOYSTICK == 1
 		int joyIndex;
 #endif
@@ -242,9 +252,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void on_actionNewFilteredView_triggered(bool checked = false);
 		void on_actionClearImageCache_triggered(bool checked = false);
 		void on_actionClearIconCache_triggered(bool checked = false);
-#if defined(QMC2_YOUTUBE_ENABLED)
-		void on_actionClearYouTubeCache_triggered(bool checked = false);
-#endif
 		void on_actionRecreateTemplateMap_triggered(bool checked = false);
 		void on_actionCheckTemplateMap_triggered(bool checked = false);
 		void on_actionClearROMStateCache_triggered(bool checked = false);
