@@ -60,6 +60,9 @@
 #if QMC2_USE_PHONON_API
 #include "audioeffects.h"
 #endif
+#if defined(QMC2_YOUTUBE_ENABLED)
+#include "youtubevideoplayer.h"
+#endif
 #include "customidsetup.h"
 #include "rankitemwidget.h"
 #include "componentsetup.h"
@@ -1453,28 +1456,7 @@ void Options::on_pushButtonApply_clicked()
 
 	if ( needRestart )
 		qmc2MainWindow->log(QMC2_LOG_FRONTEND, tr("please restart QMC2 for some changes to take effect"));
-		
-// --- Patch: Immediately reload Machine Info files when settings change, I am unsure about this patch ---
-	{
-    	QStringList pathList;
-    	QStringList emulatorList;
 
-    	// MAME history.dat or history.xml
-    	if ( qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/ProcessMameHistoryDat").toBool() ) {
-        	pathList << qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/MameHistoryDat").toString();
-        	emulatorList << "MAME";
-    	}	
-
-    	// MESS sysinfo.dat
-    	if ( qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/ProcessMessSysinfoDat").toBool() ) {
-        	pathList << qmc2Config->value(QMC2_FRONTEND_PREFIX + "FilesAndDirectories/MessSysinfoDat").toString();
-        	emulatorList << "MESS";
-    	}
-
-    	if ( !pathList.isEmpty() )
-        	qmc2MachineList->datInfoDb()->importMachineInfo(pathList, emulatorList);
-	}
-// -------------------------------------------------------------------------		
 	if ( needRecreateTemplateMap )
 		qmc2MainWindow->on_actionRecreateTemplateMap_triggered();
 
