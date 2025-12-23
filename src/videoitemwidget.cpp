@@ -1,81 +1,31 @@
-#if defined(QMC2_YOUTUBE_ENABLED)
-
-#include <QRegExp>
-
-#include "macros.h"
 #include "videoitemwidget.h"
-#include "youtubevideoplayer.h"
+#include "macros.h"
+#include <QRegExp>
+#include <QPainter>
+#include <QMouseEvent>
+// ... maybe others
 
-VideoItemWidget::VideoItemWidget(QString vID, QString vTitle, QString vAuthor, ImagePixmap *vImage, int vType, void *vPlayer, QWidget *parent)
-	: QWidget(parent)
-{
-	setupUi(this);
-	textBrowserVideoTitle->setObjectName("QMC2_VIDEO_TITLE");
-	setAutoFillBackground(true);
-	myVideoPlayer = vPlayer;
-	setType(vType);
-	setID(vID);
-	setAuthor(vAuthor);
-	if ( vType == VIDEOITEM_TYPE_YOUTUBE_SEARCH )
-		labelVideoImage->hide();
-	else if ( vImage )
-		setImage(vImage, true);
-	else
-		setImage(ImagePixmap(QPixmap(QString::fromUtf8(":/data/img/video_thumbnail.png"))), false);
-	setTitle(vTitle);
-}
-
-bool VideoItemWidget::closingState()
-{
-	switch ( itemType ) {
-		case VIDEOITEM_TYPE_YOUTUBE:
-		default:
-			if ( ((YouTubeVideoPlayer *)myVideoPlayer)->forcedExit )
-				return true;
-			break;
-	}
-	return false;
-}
 
 void VideoItemWidget::setType(int type)
 {
 	itemType = type;
-	switch ( itemType ) {
-		case VIDEOITEM_TYPE_YOUTUBE_SEARCH:
-			videoUrlPattern = VIDEOITEM_YOUTUBE_URL_PATTERN;
-			//authorUrlPattern = VIDEOITEM_YOUTUBE_AUTHOR_URL_PATTERN;
-			authorUrlPattern.clear();
-			if ( myVideoPlayer ) {
-				textBrowserVideoTitle->disconnect((YouTubeVideoPlayer *)myVideoPlayer);
-				connect(textBrowserVideoTitle, SIGNAL(customContextMenuRequested(const QPoint &)), (YouTubeVideoPlayer *)myVideoPlayer, SLOT(on_listWidgetSearchResults_customContextMenuRequested(const QPoint &))); 
-			}
-			break;
+
+    switch (itemType) {
 		case VIDEOITEM_TYPE_LOCAL_MOVIE:
 		case VIDEOITEM_TYPE_VIDEO_SNAP:
 			videoUrlPattern.clear();
 			authorUrlPattern.clear();
-			if ( myVideoPlayer ) {
-				textBrowserVideoTitle->disconnect((YouTubeVideoPlayer *)myVideoPlayer);
-				connect(textBrowserVideoTitle, SIGNAL(customContextMenuRequested(const QPoint &)), (YouTubeVideoPlayer *)myVideoPlayer, SLOT(on_listWidgetAttachedVideos_customContextMenuRequested(const QPoint &))); 
-			}
 			break;
-		case VIDEOITEM_TYPE_YOUTUBE:
+
 		default:
-			videoUrlPattern = VIDEOITEM_YOUTUBE_URL_PATTERN;
-			//authorUrlPattern = VIDEOITEM_YOUTUBE_AUTHOR_URL_PATTERN;
+            videoUrlPattern.clear();
 			authorUrlPattern.clear();
-			if ( myVideoPlayer ) {
-				textBrowserVideoTitle->disconnect((YouTubeVideoPlayer *)myVideoPlayer);
-				connect(textBrowserVideoTitle, SIGNAL(customContextMenuRequested(const QPoint &)), (YouTubeVideoPlayer *)myVideoPlayer, SLOT(on_listWidgetAttachedVideos_customContextMenuRequested(const QPoint &))); 
-			}
 			break;
 	}
 }
 
 void VideoItemWidget::setImage(const ImagePixmap &vImage, bool valid)
 {
-	if ( closingState() )
-		return;
 	videoImageValid = valid;
 	videoImage = vImage;
 	videoImage.imagePath = vImage.imagePath;
@@ -86,8 +36,6 @@ void VideoItemWidget::setImage(const ImagePixmap &vImage, bool valid)
 
 void VideoItemWidget::setImage(ImagePixmap *vImage, bool valid)
 {
-	if ( closingState() )
-		return;
 	videoImageValid = valid;
 	videoImage = *vImage;
 	videoImage.imagePath = vImage->imagePath;
@@ -98,8 +46,6 @@ void VideoItemWidget::setImage(ImagePixmap *vImage, bool valid)
 
 void VideoItemWidget::setID(QString vID)
 {
-	if ( closingState() )
-		return;
 	if ( itemType == VIDEOITEM_TYPE_LOCAL_MOVIE || itemType == VIDEOITEM_TYPE_VIDEO_SNAP )
 		videoImageValid = true;
 	videoID = vID;
@@ -109,8 +55,6 @@ void VideoItemWidget::setID(QString vID)
 
 void VideoItemWidget::setAuthor(QString vAuthor)
 {
-	if ( closingState() )
-		return;
 	videoAuthor = vAuthor;
 	if ( !videoTitle.isEmpty() )
 		setTitle(videoTitle);
@@ -118,8 +62,6 @@ void VideoItemWidget::setAuthor(QString vAuthor)
 
 void VideoItemWidget::setTitle(QString vTitle)
 {
-	if ( closingState() )
-		return;
 	videoTitle = vTitle;
 	QString htmlText = "<html><body><table cellpadding=\"0\" border=\"0\" width=\"100%\" height=\"100%\">";
 	if ( itemType == VIDEOITEM_TYPE_LOCAL_MOVIE || itemType == VIDEOITEM_TYPE_VIDEO_SNAP ) {
@@ -148,5 +90,3 @@ void VideoItemWidget::setTitle(QString vTitle)
 	htmlText += "</table></body></html>";
 	textBrowserVideoTitle->setHtml(htmlText);
 }
-
-#endif

@@ -1,5 +1,3 @@
-#if defined(QMC2_YOUTUBE_ENABLED)
-
 #ifndef VIDEOITEMWIDGET_H
 #define VIDEOITEMWIDGET_H
 
@@ -11,14 +9,8 @@
 #define VIDEOITEM_IMAGE_HEIGHT					75
 
 #define VIDEOITEM_TYPE_UNKNOWN					-1
-#define VIDEOITEM_TYPE_YOUTUBE					0
-#define VIDEOITEM_TYPE_YOUTUBE_SEARCH				1
 #define VIDEOITEM_TYPE_LOCAL_MOVIE				2
 #define VIDEOITEM_TYPE_VIDEO_SNAP				3
-
-#define VIDEOITEM_YOUTUBE_URL_PATTERN				"http://www.youtube.com/watch?v=$VIDEO_ID$"
-#define VIDEOITEM_YOUTUBE_URL_PATTERN_NO_COUNTRY_FILTER		"http://www.youtube.com/v/$VIDEO_ID$"
-#define VIDEOITEM_YOUTUBE_AUTHOR_URL_PATTERN			"http://www.youtube.com/user/$USER_ID$"
 
 class VideoItemWidget : public QWidget, public Ui::VideoItemWidget
 {
@@ -35,9 +27,7 @@ class VideoItemWidget : public QWidget, public Ui::VideoItemWidget
 		void *myVideoPlayer;
 		int itemType;
 
-		VideoItemWidget(QString, QString, QString, ImagePixmap *vImage = 0, int vType = VIDEOITEM_TYPE_YOUTUBE, void *vPlayer = 0, QWidget *parent = 0);
-
-		bool closingState();
+    	VideoItemWidget(QWidget *parent = 0);
 
 	public slots:
 		void setImage(const ImagePixmap &, bool valid = true);
@@ -48,6 +38,4 @@ class VideoItemWidget : public QWidget, public Ui::VideoItemWidget
 		void setType(int);
 };
 
-#endif
-
-#endif
+#endif // VIDEOITEMWIDGET_H
