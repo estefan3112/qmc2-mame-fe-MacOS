@@ -1,10 +1,10 @@
 # general project settings
 isEmpty(TARGET):TARGET = qmc2
-QT += core gui widgets xml xmlpatterns network sql svg testlib
+QT += core gui widgets xml xmlpatterns network sql svg testlib multimedia multimediawidgets
 win32 {
 	QT += winextras
 }
-contains(DEFINES, "QMC2_MULTIMEDIA=1"): QT += multimedia multimediawidgets
+# comment out for the time being: contains(DEFINES, "QMC2_MULTIMEDIA=1"): QT += multimedia multimediawidgets
 HEADERS += src/qftp/qftp.h \
 	src/qftp/qurlinfo.h
 SOURCES += src/qftp/qftp.cpp \
