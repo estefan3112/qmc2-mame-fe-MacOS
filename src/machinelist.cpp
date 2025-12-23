@@ -322,10 +322,8 @@ void MachineList::enableWidgets(bool enable)
 	if ( lastEnable == enable )
 		return;
 	lastEnable = enable;
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 	qmc2MainWindow->toolButtonAudioAddTracks->setEnabled(enable);
 	qmc2MainWindow->toolButtonAudioAddURL->setEnabled(enable);
-#endif
 	qmc2MainWindow->actionRelaunchSetupWizard->setEnabled(enable);
 	if ( qmc2ROMStatusExporter )
 		qmc2ROMStatusExporter->pushButtonExport->setEnabled(enable);

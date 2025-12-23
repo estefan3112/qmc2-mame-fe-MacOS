@@ -26,9 +26,7 @@ ProcessManager::ProcessManager(QWidget *parent) :
 	QObject(parent)
 {
 	procCount = 0;
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 	musicWasPlaying = sentPlaySignal = false;
-#endif
 #if defined(QMC2_YOUTUBE_ENABLED)
 	videoWasPlaying = true;
 #endif
@@ -247,12 +245,10 @@ void ProcessManager::finished(int exitCode, QProcess::ExitStatus exitStatus)
 	softwareListsMap.remove(proc);
 	softwareNamesMap.remove(proc);
 
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 	if ( procMap.count() == 0 && musicWasPlaying ) {
 		sentPlaySignal = true;
 		QTimer::singleShot(QMC2_AUDIOPLAYER_RESUME_DELAY, qmc2MainWindow, SLOT(on_actionAudioPlayTrack_triggered()));
 	}
-#endif
 
 #if defined(QMC2_YOUTUBE_ENABLED)
 	if ( procMap.count() == 0 && videoWasPlaying )
@@ -300,14 +296,13 @@ void ProcessManager::started()
 	} else if ( procMap.count() == 1 )
 		musicWasPlaying = false;
 #endif
-#if QMC2_MULTIMEDIA_ENABLED
+
 	if ( qmc2MainWindow->mediaPlayer->state() == QMediaPlayer::PlayingState && procMap.count() == 1 ) {
 		musicWasPlaying = true;
 		if ( qmc2MainWindow->checkBoxAudioPause->isChecked() )
 			QTimer::singleShot(0, qmc2MainWindow, SLOT(on_actionAudioPauseTrack_triggered()));
 	} else if ( procMap.count() == 1 )
 		musicWasPlaying = false;
-#endif
 
 #if defined(QMC2_YOUTUBE_ENABLED)
 	if ( qmc2YouTubeWidget ) {

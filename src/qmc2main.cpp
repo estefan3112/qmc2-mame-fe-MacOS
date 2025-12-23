@@ -71,12 +71,7 @@
 #include "joystick.h"
 #endif
 #include "deviceconfigurator.h"
-#if QMC2_USE_PHONON_API
-#include "audioeffects.h"
-#endif
-#if QMC2_MULTIMEDIA_ENABLED
 #include <QMediaMetaData>
-#endif
 #include "toolexec.h"
 #if defined(QMC2_OS_UNIX)
 #include "keyseqscan.h"
@@ -132,12 +127,7 @@ QString qmc2DriverName;
 DeviceConfigurator *qmc2DeviceConfigurator = 0;
 QTreeWidgetItem *qmc2LastDeviceConfigItem = 0;
 QTreeWidgetItem *qmc2LastSoftwareListItem = 0;
-#if QMC2_USE_PHONON_API
-AudioEffectDialog *qmc2AudioEffectDialog = 0;
-#endif
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 QString qmc2AudioLastIndividualTrack;
-#endif
 DemoModeDialog *qmc2DemoModeDialog = 0;
 bool qmc2ReloadActive = false;
 bool qmc2ImageCheckActive = false;
@@ -507,9 +497,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	tabWidgetEmbeddedEmulators->removeTab(0);
 	tabWidgetMachineList->removeTab(tabWidgetMachineList->indexOf(tabEmbeddedEmus));
 
-#if QMC2_MULTIMEDIA_ENABLED
-	toolButtonAudioSetupEffects->setVisible(false);
-#endif
 	lcdNumberSearchResults->setDigitCount(5);
 
 	qmc2ProjectMESSCache.setMaxCost(QMC2_PROJECTMESS_CACHE_SIZE);
@@ -5285,26 +5272,11 @@ void MainWindow::closeEvent(QCloseEvent *e)
 		delete phononAudioPlayer;
 #endif
 
-#if QMC2_MULTIMEDIA_ENABLED
 	if ( mediaPlayer ) {
 		log(QMC2_LOG_FRONTEND, tr("destroying media player"));
 		mediaPlayer->disconnect();
 		delete mediaPlayer;
 	}
-#endif
-
-#if defined(QMC2_YOUTUBE_ENABLED)
-	if ( qmc2YouTubeWidget ) {
-		log(QMC2_LOG_FRONTEND, tr("destroying YouTube video widget"));
-		qmc2YouTubeWidget->saveSettings();
-		qmc2YouTubeWidget->forcedExit = true;
-		if ( qmc2YouTubeWidget->isPlaying() || qmc2YouTubeWidget->isPaused() )
-			qmc2YouTubeWidget->stop();
-		qmc2YouTubeWidget->close();
-		qmc2YouTubeWidget->deleteLater();
-		qmc2YouTubeWidget = 0;
-	}
-#endif
 
 	qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "Layout/MainWidget/RanksLocked", RankItemWidget::ranksLocked);
 
@@ -5405,7 +5377,6 @@ void MainWindow::closeEvent(QCloseEvent *e)
 		if ( !floatToggleButtonSoftwareDetail->isChecked() )
 			qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "Layout/MainWidget/SoftwareDetailGeometry", tabWidgetSoftwareDetail->saveGeometry());
 
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 		QStringList psl;
 		for (int i = 0; i < listWidgetAudioPlaylist->count(); i++)
 			psl << listWidgetAudioPlaylist->item(i)->text();
@@ -5417,7 +5388,6 @@ void MainWindow::closeEvent(QCloseEvent *e)
 		qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "AudioPlayer/Pause", checkBoxAudioPause->isChecked());
 		qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "AudioPlayer/Fade", checkBoxAudioFade->isChecked());
 		qmc2Config->setValue(QMC2_FRONTEND_PREFIX + "AudioPlayer/Volume", dialAudioVolume->value());
-#endif
 	}
 
 	// download manager widget
@@ -5677,10 +5647,6 @@ void MainWindow::init()
 
 #if defined(QMC2_OS_MAC)
 	qmc2Options->setParent(this, Qt::Dialog);
-#endif
-
-#if QMC2_USE_PHONON_API
-	QTimer::singleShot(0, this, SLOT(on_toolButtonAudioSetupEffects_clicked()));
 #endif
 
 	qmc2GhostImagePixmap.load(":/data/img/ghost.png");
@@ -6223,7 +6189,6 @@ void MainWindow::loadSoftwareInfoDB()
 	}
 }
 
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 void MainWindow::on_actionAudioPreviousTrack_triggered(bool /*checked*/)
 {
 	toolButtonAudioPreviousTrack->setDown(true);
@@ -6248,13 +6213,10 @@ void MainWindow::on_actionAudioPreviousTrack_triggered(bool /*checked*/)
 		listWidgetAudioPlaylist->clearSelection();
 		listWidgetAudioPlaylist->setCurrentRow(row);
 		ci = listWidgetAudioPlaylist->currentItem();
+
 		switch ( audioState ) {
-#if QMC2_MULTIMEDIA_ENABLED
 			case QMediaPlayer::PlayingState:
-#else
-			case Phonon::PlayingState:
-#endif
-				QTimer::singleShot(0, this, SLOT(on_actionAudioPlayTrack_triggered()));
+			QTimer::singleShot(0, this, SLOT(on_actionAudioPlayTrack_triggered()));
 				break;
 
 			default:
@@ -6294,11 +6256,7 @@ void MainWindow::on_actionAudioNextTrack_triggered(bool /*checked*/)
 		listWidgetAudioPlaylist->setCurrentRow(row);
 		ci = listWidgetAudioPlaylist->currentItem();
 		switch ( audioState ) {
-#if QMC2_MULTIMEDIA_ENABLED
 			case QMediaPlayer::PlayingState:
-#else
-			case Phonon::PlayingState:
-#endif
 				QTimer::singleShot(0, this, SLOT(on_actionAudioPlayTrack_triggered()));
 				break;
 
@@ -6324,19 +6282,11 @@ void MainWindow::on_actionAudioFastBackward_triggered(bool checked)
 
 void MainWindow::on_toolButtonAudioFastBackward_clicked(bool /*checked*/)
 {
-#if QMC2_MULTIMEDIA_ENABLED
 	qint64 newTime = mediaPlayer->position();
-#else
-	qint64 newTime = phononAudioPlayer->currentTime();
-#endif
 	if ( newTime > 0 ) {
 		newTime -= QMC2_AUDIOPLAYER_SEEK_OFFSET;
 		audioFastBackwarding = true;
-#if QMC2_MULTIMEDIA_ENABLED
 		mediaPlayer->setPosition(newTime);
-#else
-		phononAudioPlayer->seek(newTime);
-#endif
 		audioTick(newTime);
 	}
 }
@@ -6357,19 +6307,12 @@ void MainWindow::on_actionAudioFastForward_triggered(bool checked)
 
 void MainWindow::on_toolButtonAudioFastForward_clicked(bool /*checked*/)
 {
-#if QMC2_MULTIMEDIA_ENABLED
 	qint64 newTime = mediaPlayer->position();
-#else
-	qint64 newTime = phononAudioPlayer->currentTime();
-#endif
+
 	if ( newTime > 0 ) {
 		newTime += QMC2_AUDIOPLAYER_SEEK_OFFSET;
 		audioFastForwarding = true;
-#if QMC2_MULTIMEDIA_ENABLED
 		mediaPlayer->setPosition(newTime);
-#else
-		phononAudioPlayer->seek(newTime);
-#endif
 		audioTick(newTime);
 	}
 }
@@ -6386,13 +6329,8 @@ void MainWindow::on_actionAudioStopTrack_triggered(bool /*checked*/)
 	actionAudioPauseTrack->setChecked(false);
 	actionAudioPlayTrack->setChecked(false);
 	audioFastForwarding = audioFastBackwarding = audioSkippingTracks = false;
-#if QMC2_MULTIMEDIA_ENABLED
 	mediaPlayer->stop();
 	audioState = QMediaPlayer::StoppedState;
-#else
-	phononAudioPlayer->stop();
-	audioState = Phonon::StoppedState;
-#endif
 	progressBarAudioProgress->setFormat(QString());
 	progressBarAudioProgress->setRange(0, 100);
 	progressBarAudioProgress->setValue(0);
@@ -6401,28 +6339,21 @@ void MainWindow::on_actionAudioStopTrack_triggered(bool /*checked*/)
 
 void MainWindow::on_actionAudioPauseTrack_triggered(bool /*checked*/)
 {
-	actionAudioPauseTrack->setChecked(true);
-	actionAudioStopTrack->setChecked(false);
-	actionAudioPlayTrack->setChecked(false);
-	audioFastForwarding = audioFastBackwarding = audioSkippingTracks = false;
-#if QMC2_MULTIMEDIA_ENABLED
-	if ( checkBoxAudioFade->isChecked() && audioState == QMediaPlayer::PlayingState )
-		audioFade(QMC2_AUDIOPLAYER_FADER_PAUSE);
-	else
-		mediaPlayer->pause();
-	audioState = QMediaPlayer::PausedState;
-#else
-	if ( checkBoxAudioFade->isChecked() && audioState == Phonon::PlayingState )
-		audioFade(QMC2_AUDIOPLAYER_FADER_PAUSE);
-	else
-		phononAudioPlayer->pause();
-	audioState = Phonon::PausedState;
-#endif
+    actionAudioPauseTrack->setChecked(true);
+    actionAudioStopTrack->setChecked(false);
+    actionAudioPlayTrack->setChecked(false);
+    audioFastForwarding = audioFastBackwarding = audioSkippingTracks = false;
+
+    if ( checkBoxAudioFade->isChecked() && audioState == QMediaPlayer::PlayingState )
+        audioFade(QMC2_AUDIOPLAYER_FADER_PAUSE);
+    else
+        mediaPlayer->pause();
+
+    audioState = QMediaPlayer::PausedState;
 }
 
 void MainWindow::on_actionAudioPlayTrack_triggered(bool /*checked*/)
 {
-#if QMC2_MULTIMEDIA_ENABLED
 	// if this is a URL media source, force a reconnect to the stream...
 	if ( mediaPlayer->currentMedia().canonicalUrl().scheme() != "file" )
 		mediaPlayer->setMedia(mediaPlayer->currentMedia().canonicalUrl());
@@ -6473,55 +6404,6 @@ void MainWindow::on_actionAudioPlayTrack_triggered(bool /*checked*/)
 		audioState = QMediaPlayer::PlayingState;
 	} else
 		on_actionAudioStopTrack_triggered(true);
-#else
-	// if this is a URL media source, force a reconnect to the stream...
-	if ( phononAudioPlayer->currentSource().type() == Phonon::MediaSource::Url )
-		phononAudioPlayer->setCurrentSource(phononAudioPlayer->currentSource().url());
-
-	static QString audioPlayerCurrentTrack;
-	audioFastForwarding = audioFastBackwarding = false;
-	if ( audioState == Phonon::PausedState ) {
-		if ( qmc2ProcessManager->sentPlaySignal && qmc2ProcessManager->procMap.count() > 0 ) {
-			qmc2ProcessManager->musicWasPlaying = true;
-		} else if ( checkBoxAudioFade->isChecked() ) {
-			audioFade(QMC2_AUDIOPLAYER_FADER_PLAY);
-		} else {
-			phononAudioPlayer->play();
-			actionAudioPlayTrack->setChecked(true);
-			actionAudioStopTrack->setChecked(false);
-			actionAudioPauseTrack->setChecked(false);
-		}
-		qmc2ProcessManager->sentPlaySignal = false;
-		audioState = Phonon::PlayingState;
-	} else if ( listWidgetAudioPlaylist->count() > 0 ) {
-		QList<QListWidgetItem *> sl = listWidgetAudioPlaylist->selectedItems();
-		QListWidgetItem *ci = 0;
-		if ( sl.count() > 0 )
-			ci = sl[0];
-		if ( !ci ) {
-			if ( !qmc2AudioLastIndividualTrack.isEmpty() ) {
-				audioScrollToCurrentItem();
-				ci = listWidgetAudioPlaylist->currentItem();
-			}
-			if ( !ci ) {
-				listWidgetAudioPlaylist->setCurrentRow(0);
-				ci = listWidgetAudioPlaylist->currentItem();
-			}
-		}
-		if ( ci->text() != audioPlayerCurrentTrack ) {
-			progressBarAudioProgress->reset();
-			audioPlayerCurrentTrack = ci->text();
-			listWidgetAudioPlaylist->scrollToItem(ci, qmc2CursorPositioningMode);
-			phononAudioPlayer->setCurrentSource(Phonon::MediaSource(audioPlayerCurrentTrack));
-		}
-		phononAudioPlayer->play();
-		actionAudioPlayTrack->setChecked(true);
-		actionAudioStopTrack->setChecked(false);
-		actionAudioPauseTrack->setChecked(false);
-		audioState = Phonon::PlayingState;
-	} else
-		on_actionAudioStopTrack_triggered(true);
-#endif
 }
 
 void MainWindow::on_toolButtonAudioAddTracks_clicked()
@@ -6537,23 +6419,6 @@ void MainWindow::on_toolButtonAudioAddURL_clicked()
 	QString streamUrl = QInputDialog::getText(this, tr("Add URL"), tr("Enter valid MP3 stream URL:"), QLineEdit::Normal, "", &ok);
 	if ( ok && !streamUrl.isEmpty() )
 		listWidgetAudioPlaylist->addItem(streamUrl);
-}
-
-void MainWindow::on_toolButtonAudioSetupEffects_clicked()
-{
-#if !QMC2_MULTIMEDIA_ENABLED
-	static bool audioSetupEffectsFirstCall = true;
-
-	if ( !qmc2AudioEffectDialog )
-		qmc2AudioEffectDialog = new AudioEffectDialog(this);
-
-	if ( !audioSetupEffectsFirstCall ) {
-		qmc2AudioEffectDialog->show();
-		qmc2AudioEffectDialog->raise();
-	}
-
-	audioSetupEffectsFirstCall = false;
-#endif
 }
 
 void MainWindow::on_toolButtonAudioRemoveTracks_clicked()
@@ -6578,11 +6443,8 @@ void MainWindow::on_listWidgetAudioPlaylist_itemSelectionChanged()
 	if ( sl.count() == 1 && !audioSkippingTracks && !qmc2EarlyStartup ) {
 		QListWidgetItem *ci = listWidgetAudioPlaylist->currentItem();
 		switch ( audioState ) {
-#if QMC2_MULTIMEDIA_ENABLED
 			case QMediaPlayer::PlayingState:
-#else
-			case Phonon::PlayingState:
-#endif
+
 				if ( qmc2AudioLastIndividualTrack != sl[0]->text() && ci == sl[0] )
 					QTimer::singleShot(0, this, SLOT(on_actionAudioPlayTrack_triggered()));
 				break;
@@ -6623,11 +6485,8 @@ void MainWindow::on_actionAudioLowerVolume_triggered(bool /*checked*/)
 
 void MainWindow::on_dialAudioVolume_valueChanged(int value)
 {
-#if QMC2_MULTIMEDIA_ENABLED
 	mediaPlayer->setVolume(value);
-#else
-	phononAudioOutput->setVolume((qreal)value/100.0);
-#endif
+
 }
 
 void MainWindow::audioFinished()
@@ -6653,27 +6512,18 @@ void MainWindow::audioFinished()
 		QTimer::singleShot(0, this, SLOT(on_actionAudioNextTrack_triggered()));
 }
 
-#if QMC2_MULTIMEDIA_ENABLED
 void MainWindow::audioStateChanged(QMediaPlayer::MediaStatus mediaStatus)
 {
 	if ( mediaStatus == QMediaPlayer::EndOfMedia )
 		audioFinished();
 }
-#endif
 
 void MainWindow::audioTick(qint64 newTime)
 {
-#if QMC2_MULTIMEDIA_ENABLED
 	if ( audioState != QMediaPlayer::StoppedState ) {
 		progressBarAudioProgress->setFormat(tr("%vs (%ms total)"));
 		progressBarAudioProgress->setValue(newTime/1000);
 	}
-#else
-	if ( audioState != Phonon::StoppedState ) {
-		progressBarAudioProgress->setFormat(tr("%vs (%ms total)"));
-		progressBarAudioProgress->setValue(newTime/1000);
-	}
-#endif
 }
 
 void MainWindow::audioTotalTimeChanged(qint64 newTotalTime)
@@ -6681,11 +6531,7 @@ void MainWindow::audioTotalTimeChanged(qint64 newTotalTime)
 	if ( newTotalTime > 0 ) {
 		progressBarAudioProgress->setFormat(tr("%vs (%ms total)"));
 		progressBarAudioProgress->setRange(0, newTotalTime/1000);
-#if QMC2_MULTIMEDIA_ENABLED
 		progressBarAudioProgress->setValue(mediaPlayer->position()/1000);
-#else
-		progressBarAudioProgress->setValue(phononAudioPlayer->currentTime()/1000);
-#endif
 	} else {
 		progressBarAudioProgress->setRange(0, 100);
 		progressBarAudioProgress->setValue(0);
@@ -6719,13 +6565,8 @@ void MainWindow::audioFade(int faderFunction)
 					qApp->processEvents();
 				QTest::qSleep(1);
 			}
-#if QMC2_MULTIMEDIA_ENABLED
 			mediaPlayer->pause();
 			audioState = QMediaPlayer::PausedState;
-#else
-			phononAudioPlayer->pause();
-			audioState = Phonon::PausedState;
-#endif
 			qApp->processEvents();
 			actionAudioPauseTrack->setEnabled(true);
 			toolButtonAudioPauseTrack->setEnabled(true);
@@ -6747,13 +6588,9 @@ void MainWindow::audioFade(int faderFunction)
 			actionAudioStopTrack->setEnabled(false);
 			toolButtonAudioStopTrack->setEnabled(false);
 			qApp->processEvents();
-#if QMC2_MULTIMEDIA_ENABLED
 			mediaPlayer->play();
 			audioState = QMediaPlayer::PlayingState;
-#else
-			phononAudioPlayer->play();
-			audioState = Phonon::PlayingState;
-#endif
+
 			updateCounter = 0;
 			for (vol = 0; vol <= currentVolume; vol += volStep) {
 				updateCounter++;
@@ -6777,17 +6614,10 @@ void MainWindow::audioFade(int faderFunction)
 void MainWindow::audioMetaDataChanged()
 {
 	static QString lastTrackInfo;
-#if QMC2_MULTIMEDIA_ENABLED
 	QString titleMetaData(mediaPlayer->metaData(QMediaMetaData::Title).toString());
 	QString artistMetaData(mediaPlayer->metaData(QMediaMetaData::ContributingArtist).toStringList().join(" / "));
 	QString albumMetaData(mediaPlayer->metaData(QMediaMetaData::AlbumTitle).toString());
 	QString genreMetaData(mediaPlayer->metaData(QMediaMetaData::Genre).toString());
-#else
-	QString titleMetaData(phononAudioPlayer->metaData(Phonon::TitleMetaData).join(", "));
-	QString artistMetaData(phononAudioPlayer->metaData(Phonon::ArtistMetaData).join(", "));
-	QString albumMetaData(phononAudioPlayer->metaData(Phonon::AlbumMetaData).join(", "));
-	QString genreMetaData(phononAudioPlayer->metaData(Phonon::GenreMetaData).join(", "));
-#endif
   
 	if ( titleMetaData.isEmpty() && artistMetaData.isEmpty() && albumMetaData.isEmpty() && genreMetaData.isEmpty() )
 		return;
@@ -6800,57 +6630,19 @@ void MainWindow::audioMetaDataChanged()
 
 void MainWindow::audioBufferStatus(int percentFilled)
 {
-	progressBarAudioProgress->setRange(0, 100);
-	progressBarAudioProgress->setFormat(tr("Buffering %p%"));
-	progressBarAudioProgress->setValue(percentFilled);
-	if ( percentFilled >= 100 ) {
-#if QMC2_MULTIMEDIA_ENABLED
-		if ( audioState == QMediaPlayer::StoppedState )
-			progressBarAudioProgress->setRange(0, 100);
-		else
-			progressBarAudioProgress->setRange(0, 0);
-#else
-		if ( audioState == Phonon::StoppedState )
-			progressBarAudioProgress->setRange(0, 100);
-		else
-			progressBarAudioProgress->setRange(0, 0);
-#endif
-		progressBarAudioProgress->reset();
-	}
+    progressBarAudioProgress->setRange(0, 100);
+    progressBarAudioProgress->setFormat(tr("Buffering %p%"));
+    progressBarAudioProgress->setValue(percentFilled);
+
+    if ( percentFilled >= 100 ) {
+        if ( audioState == QMediaPlayer::StoppedState ) {
+            progressBarAudioProgress->setRange(0, 100);
+        } else {
+            progressBarAudioProgress->setRange(0, 0);
+            progressBarAudioProgress->reset();
+        }
+    }
 }
-#else
-void MainWindow::on_actionAudioPreviousTrack_triggered(bool) {}
-void MainWindow::toolButtonAudioPreviousTrack_resetButton() {}
-void MainWindow::on_actionAudioNextTrack_triggered(bool) {}
-void MainWindow::toolButtonAudioNextTrack_resetButton() {}
-void MainWindow::on_actionAudioFastBackward_triggered(bool) {}
-void MainWindow::on_toolButtonAudioFastBackward_clicked(bool) {}
-void MainWindow::toolButtonAudioFastBackward_resetButton() {}
-void MainWindow::on_actionAudioFastForward_triggered(bool) {}
-void MainWindow::on_toolButtonAudioFastForward_clicked(bool) {}
-void MainWindow::toolButtonAudioFastForward_resetButton() {}
-void MainWindow::on_actionAudioStopTrack_triggered(bool) {}
-void MainWindow::on_actionAudioPauseTrack_triggered(bool) {}
-void MainWindow::on_actionAudioPlayTrack_triggered(bool) {}
-void MainWindow::on_toolButtonAudioAddTracks_clicked() {}
-void MainWindow::on_toolButtonAudioAddURL_clicked() {}
-void MainWindow::on_toolButtonAudioRemoveTracks_clicked() {}
-void MainWindow::on_toolButtonAudioSetupEffects_clicked() {}
-void MainWindow::on_listWidgetAudioPlaylist_itemSelectionChanged() {}
-void MainWindow::on_dialAudioVolume_valueChanged(int) {}
-void MainWindow::on_actionAudioRaiseVolume_triggered(bool) {}
-void MainWindow::on_actionAudioLowerVolume_triggered(bool) {}
-void MainWindow::audioFinished() {}
-void MainWindow::audioTick(qint64) {}
-void MainWindow::audioTotalTimeChanged(qint64) {}
-void MainWindow::audioFade(int) {}
-void MainWindow::audioMetaDataChanged() {}
-void MainWindow::audioBufferStatus(int) {}
-void MainWindow::audioScrollToCurrentItem() {}
-#if QMC2_MULTIMEDIA_ENABLED
-void MainWindow::audioStateChanged(QMediaPlayer::MediaStatus) {}
-#endif
-#endif
 
 void MainWindow::on_checkBoxRemoveFinishedDownloads_stateChanged(int /*state*/)
 {

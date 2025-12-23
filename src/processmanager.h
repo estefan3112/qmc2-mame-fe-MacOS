@@ -22,13 +22,8 @@ class ProcessManager : public QObject
 		QString loggedCommandLine;
 		QString exitString;
 		bool launchForeignID;
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 		bool musicWasPlaying;
 		bool sentPlaySignal;
-#endif
-#if defined(QMC2_YOUTUBE_ENABLED)
-		bool videoWasPlaying;
-#endif
 
 		ProcessManager(QWidget *parent = 0);
 

@@ -232,21 +232,15 @@ ComponentInfo *ComponentSetup::initComponent3()
 	componentInfo->setLongTitle(QMC2_EMULATORCONTROL_INDEX, tr("Emulator control panel"));
 	componentInfo->setIcon(QMC2_EMULATORCONTROL_INDEX, QIcon(QString::fromUtf8(":/data/img/process.png")));
 	componentInfo->setWidget(QMC2_EMULATORCONTROL_INDEX, qmc2MainWindow->tabWidgetLogsAndEmulators->widget(QMC2_EMULATORCONTROL_INDEX));
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 	componentInfo->setShortTitle(QMC2_AUDIOPLAYER_INDEX, tr("&Audio player"));
 	componentInfo->setLongTitle(QMC2_AUDIOPLAYER_INDEX, tr("Audio player"));
 	componentInfo->setIcon(QMC2_AUDIOPLAYER_INDEX, QIcon(QString::fromUtf8(":/data/img/music.png")));
 	componentInfo->setWidget(QMC2_AUDIOPLAYER_INDEX, qmc2MainWindow->tabWidgetLogsAndEmulators->widget(QMC2_AUDIOPLAYER_INDEX));
-#endif
 	componentInfo->setShortTitle(QMC2_DOWNLOADS_INDEX, tr("Do&wnloads"));
 	componentInfo->setLongTitle(QMC2_DOWNLOADS_INDEX, tr("Downloads"));
 	componentInfo->setIcon(QMC2_DOWNLOADS_INDEX, QIcon(QString::fromUtf8(":/data/img/download.png")));
 	componentInfo->setWidget(QMC2_DOWNLOADS_INDEX, qmc2MainWindow->tabWidgetLogsAndEmulators->widget(QMC2_DOWNLOADS_INDEX));
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 	componentInfo->availableFeatureList() << QMC2_FRONTENDLOG_INDEX << QMC2_EMULATORLOG_INDEX << QMC2_EMULATORCONTROL_INDEX << QMC2_AUDIOPLAYER_INDEX << QMC2_DOWNLOADS_INDEX;
-#else
-	componentInfo->availableFeatureList() << QMC2_FRONTENDLOG_INDEX << QMC2_EMULATORLOG_INDEX << QMC2_EMULATORCONTROL_INDEX << QMC2_DOWNLOADS_INDEX;
-#endif
 	components() << "Component3";
 	if ( !qmc2Config->contains(QMC2_FRONTEND_PREFIX + "Layout/" + components().last() + "/ActiveFeatures") ) {
 		foreach (int index, componentInfo->availableFeatureList())

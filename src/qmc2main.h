@@ -22,14 +22,14 @@
 #if QMC2_USE_PHONON_API
 #include "qmc2_phonon.h"
 #endif
-#if QMC2_MULTIMEDIA_ENABLED
 #include <QMediaPlayer>
-#endif
+#include <QVideoWidget>
 #include "imagewidget.h"
 #include "rankitemwidget.h"
 #include "swldbmgr.h"
 #include "romstatefilter.h"
 #include "machinelistviewer.h"
+#include "videosnapplayerwidget.h"
 
 
 
@@ -120,22 +120,11 @@ signals:
 #if QMC2_JOYSTICK == 1
 		int joyIndex;
 #endif
-#if QMC2_USE_PHONON_API
-		Phonon::MediaObject *phononAudioPlayer;
-		Phonon::AudioOutput *phononAudioOutput;
-		Phonon::Path phononAudioPath;
-		bool audioFastForwarding;
-		bool audioFastBackwarding;
-		bool audioSkippingTracks;
-		Phonon::State audioState;
-#endif
-#if QMC2_MULTIMEDIA_ENABLED
 		QMediaPlayer *mediaPlayer;
 		bool audioFastForwarding;
 		bool audioFastBackwarding;
 		bool audioSkippingTracks;
 		QMediaPlayer::State audioState;
-#endif
 #if defined(QMC2_EMBEDDER_SUPPORTED)
 		QWidget *widgetEmbeddedEmus;
 		QWidget *embedderCornerWidget;
@@ -330,15 +319,12 @@ signals:
 		void on_toolButtonAudioAddTracks_clicked();
 		void on_toolButtonAudioAddURL_clicked();
 		void on_toolButtonAudioRemoveTracks_clicked();
-		void on_toolButtonAudioSetupEffects_clicked();
 		void on_listWidgetAudioPlaylist_itemSelectionChanged();
 		void on_dialAudioVolume_valueChanged(int);
 		void on_actionAudioRaiseVolume_triggered(bool checked = false);
 		void on_actionAudioLowerVolume_triggered(bool checked = false);
 		void audioFinished();
-#if QMC2_MULTIMEDIA_ENABLED
 		void audioStateChanged(QMediaPlayer::MediaStatus);
-#endif
 		void audioTick(qint64);
 		void audioTotalTimeChanged(qint64);
 		void audioFade(int);

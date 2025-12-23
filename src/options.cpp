@@ -308,7 +308,6 @@ Options::Options(QWidget *parent) :
 	qmc2ShortcutHash.insert("F10", QPair<QString, QAction *>(tr("Check software-states"), 0));
 	qmc2ShortcutHash.insert("F11", QPair<QString, QAction *>(tr("Toggle full screen"), 0));
 	qmc2ShortcutHash.insert("F12", QPair<QString, QAction *>(tr("Launch arcade mode"), 0));
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 	qmc2ShortcutHash.insert("Ctrl+Alt+Left", QPair<QString, QAction *>(tr("Previous track (audio player)"), 0));
 	qmc2ShortcutHash.insert("Ctrl+Alt+Right", QPair<QString, QAction *>(tr("Next track (audio player)"), 0));
 	qmc2ShortcutHash.insert("Ctrl+Alt+B", QPair<QString, QAction *>(tr("Fast backward (audio player)"), 0));
@@ -318,7 +317,6 @@ Options::Options(QWidget *parent) :
 	qmc2ShortcutHash.insert("Ctrl+Alt+P", QPair<QString, QAction *>(tr("Play track (audio player)"), 0));
 	qmc2ShortcutHash.insert("Ctrl+Alt+PgUp", QPair<QString, QAction *>(tr("Raise volume (audio player)"), 0));
 	qmc2ShortcutHash.insert("Ctrl+Alt+PgDown", QPair<QString, QAction *>(tr("Lower volume (audio player)"), 0));
-#endif
 	qmc2ShortcutHash.insert("Alt+PgUp", QPair<QString, QAction *>(tr("Increase rank"), 0));
 	qmc2ShortcutHash.insert("Alt+PgDown", QPair<QString, QAction *>(tr("Decrease rank"), 0));
 
@@ -626,7 +624,6 @@ void Options::apply()
 	}
 	if ( qmc2ImageChecker )
 		qmc2ImageChecker->adjustIconSizes();
-#if QMC2_USE_PHONON_API || QMC2_MULTIMEDIA_ENABLED
 	qmc2MainWindow->toolButtonAudioPreviousTrack->setIconSize(iconSize);
 	qmc2MainWindow->toolButtonAudioNextTrack->setIconSize(iconSize);
 	qmc2MainWindow->toolButtonAudioFastBackward->setIconSize(iconSize);
@@ -637,16 +634,6 @@ void Options::apply()
 	qmc2MainWindow->toolButtonAudioAddTracks->setIconSize(iconSize);
 	qmc2MainWindow->toolButtonAudioAddURL->setIconSize(iconSize);
 	qmc2MainWindow->toolButtonAudioRemoveTracks->setIconSize(iconSize);
-	qmc2MainWindow->toolButtonAudioSetupEffects->setIconSize(iconSize);
-#endif
-#if QMC2_USE_PHONON_API
-	if ( qmc2AudioEffectDialog )
-		QTimer::singleShot(0, qmc2AudioEffectDialog, SLOT(adjustIconSizes()));
-#endif
-#if defined(QMC2_YOUTUBE_ENABLED)
-	if ( qmc2YouTubeWidget )
-		QTimer::singleShot(0, qmc2YouTubeWidget, SLOT(adjustIconSizes()));
-#endif
 	if ( qmc2ROMStatusExporter )
 		QTimer::singleShot(0, qmc2ROMStatusExporter, SLOT(adjustIconSizes()));
 	toolButtonBrowseSoftwareListCacheDb->setIconSize(iconSize);
